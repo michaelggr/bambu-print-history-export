@@ -168,18 +168,18 @@ export default function Login() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 maxLength={6}
-                className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition-colors focus:border-[var(--accent)]"
+                className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition-colors focus:border-[var(--accent)]"
               />
               <button
                 onClick={handleSendCode}
                 disabled={countdown > 0}
-                className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`shrink-0 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   countdown > 0
                     ? 'cursor-not-allowed bg-[var(--bg-tertiary)] text-[var(--text-muted)]'
                     : 'bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20'
                 }`}
               >
-                {countdown > 0 ? `${countdown}s` : '发送验证码'}
+                {countdown > 0 ? `${countdown}s` : '获取验证码'}
               </button>
             </div>
           )}
