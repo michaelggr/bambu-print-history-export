@@ -1,4 +1,4 @@
-﻿﻿import { useState, useCallback } from 'react';
+﻿﻿import { useState, useCallback, useEffect } from 'react';
 import { FileJson, FileSpreadsheet, Plug, Download, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAppStore from '@/store';
@@ -47,7 +47,6 @@ function getTodayStr(): string {
 
 export default function Export() {
   const token = useAppStore((s) => s.token);
-  const totalCount = useAppStore((s) => s.totalCount);
 
   const [format, setFormat] = useState<ExportFormat>('json');
   const [status, setStatus] = useState('');
@@ -55,6 +54,17 @@ export default function Export() {
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+  const [totalCount, setTotalCount] = useState(0);
+
+  // 从 API 获取总记录数
+  useEffect(() => {
+    fetch('/api/history?page=1&pageSize=1')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) setTotalCount(json.data.total ?? 0);
+      })
+      .catch(() => {});
+  }, []);
 
   /** 触发浏览器下载 */
   const triggerDownload = useCallback((blob: Blob, ext: string) => {
@@ -114,7 +124,7 @@ export default function Export() {
       </h1>
 
       {/* 格式选择卡片 */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {FORMAT_OPTIONS.map(({ value, icon: Icon, label, desc }) => (
           <button
             key={value}

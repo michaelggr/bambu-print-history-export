@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Mail, Lock, Loader2 } from 'lucide-react';
 import useAppStore from '@/store';
+import { api } from '@/utils/api';
+import { isNative } from '@/utils/platform';
 
 type LoginMode = 'code' | 'password';
 
@@ -23,13 +25,12 @@ export default function Login() {
       navigate('/', { replace: true });
       return;
     }
-    // 检查后端是否有缓存的 token
-    fetch('/api/auth/status')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data?.loggedIn) {
-          // 后端有 token，前端也标记为已登录
-          setAuth('cached');
+    // 检查后端/本地是否有缓存的 token
+    api.checkAuth()
+      .then(({ loggedIn, token }) => {
+        if (loggedIn) {
+          // native 模式下 token 存在 localStorage，需要同步到 store
+          setAuth(token || 'cached');
           navigate('/', { replace: true });
         }
       })
@@ -51,16 +52,11 @@ export default function Login() {
     }
     setError('');
     try {
-      const res = await fetch('/api/auth/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account: account.trim() }),
-      });
-      const data = await res.json();
-      if (data.success) {
+      const result = await api.sendCode(account.trim());
+      if (result.success) {
         setCountdown(60);
       } else {
-        setError(data.error || '发送验证码失败');
+        setError(result.error || '发送验证码失败');
       }
     } catch {
       setError('网络错误，请重试');
@@ -86,24 +82,18 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const body: Record<string, string> = { account: account.trim() };
-      if (mode === 'code') body.code = code.trim();
-      else body.password = password;
+      let result: { success: boolean; token?: string; error?: string };
+      if (mode === 'code') {
+        result = await api.loginWithCode(account.trim(), code.trim());
+      } else {
+        result = await api.loginWithPassword(account.trim(), password);
+      }
 
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      // 后端返回 { success: true, data: { token } }
-      const token = data.data?.token || data.token;
-      if (data.success && token) {
-        setAuth(token);
+      if (result.success && result.token) {
+        setAuth(result.token);
         navigate('/', { replace: true });
       } else {
-        setError(data.error || '登录失败，请重试');
+        setError(result.error || '登录失败，请重试');
       }
     } catch {
       setError('网络错误，请重试');
@@ -115,7 +105,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] px-4">
       {/* 登录卡片 */}
-      <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-8">
+      <div className="w-full max-w-md mx-4 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-6 md:p-8">
         {/* 头部图标 + 标题 */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">

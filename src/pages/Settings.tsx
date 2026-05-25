@@ -1,7 +1,13 @@
 ﻿﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Trash2, Info, ExternalLink, Loader2 } from 'lucide-react';
+import { LogOut, Trash2, Info, ExternalLink, Loader2, RefreshCw, Download } from 'lucide-react';
 import useAppStore from '@/store';
+import { api } from '@/utils/api';
+
+/** 当前版本号 */
+const APP_VERSION = '1.1.0';
+/** GitHub 仓库 */
+const GITHUB_REPO = 'michaelggr/bambu-print-history-export';
 
 /** 设置项类型 */
 interface SettingsData {
@@ -26,19 +32,19 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [updateChecking, setUpdateChecking] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<{ hasUpdate: boolean; latest: string; notes: string; downloadUrl: string } | null>(null);
 
   /** 获取设置 */
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch('/api/settings', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json();
-      if (data.success !== false) {
+      const json = await api.getSettings();
+      if (json.success !== false) {
+        const d = json.data ?? json;
         setSettings({
-          loggingEnabled: data.loggingEnabled ?? false,
-          logLevel: data.logLevel ?? 'INFO',
-          cacheCount: data.cacheCount ?? 0,
+          loggingEnabled: d.loggingEnabled ?? false,
+          logLevel: d.logLevel ?? 'INFO',
+          cacheCount: d.cacheCount ?? 0,
         });
       }
     } catch {
@@ -46,7 +52,7 @@ export default function Settings() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchSettings();
@@ -57,15 +63,7 @@ export default function Settings() {
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(patch),
-      });
-      const data = await res.json();
+      const data = await api.updateSettings(patch);
       if (data.success === false) {
         setError(data.error || '更新失败');
         return;
@@ -77,60 +75,73 @@ export default function Settings() {
     } finally {
       setSaving(false);
     }
-  }, [token]);
+  }, []);
 
   /** 清除缓存 */
   const handleClearCache = useCallback(async () => {
     if (!window.confirm('确定要清除缓存数据吗？此操作不可撤销。')) return;
     try {
-      const res = await fetch('/api/settings/cache', {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json();
+      const data = await api.clearCache();
       if (data.success) {
         setSettings((prev) => ({ ...prev, cacheCount: 0 }));
       } else {
-        setError(data.error || '清除缓存失败');
+        setError('清除缓存失败');
       }
     } catch {
       setError('网络错误，请重试');
     }
-  }, [token]);
+  }, []);
 
   /** 清除全部数据 */
   const handleClearAll = useCallback(async () => {
     if (!window.confirm('确定要清除全部数据吗？此操作将删除所有历史记录和缓存，且不可撤销！')) return;
     try {
-      const res = await fetch('/api/settings/all', {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json();
+      const data = await api.clearAll();
       if (data.success) {
         clearAuth();
         navigate('/login', { replace: true });
       } else {
-        setError(data.error || '清除数据失败');
+        setError('清除数据失败');
       }
     } catch {
       setError('网络错误，请重试');
     }
-  }, [token, clearAuth, navigate]);
+  }, [clearAuth, navigate]);
 
   /** 登出 */
   const handleLogout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      await api.logout();
     } catch {
       // 即使 API 失败也继续登出
     }
     clearAuth();
     navigate('/login', { replace: true });
-  }, [token, clearAuth, navigate]);
+  }, [clearAuth, navigate]);
+
+  /** 检查更新 — 从 GitHub Releases API 获取最新版本 */
+  const handleCheckUpdate = useCallback(async () => {
+    setUpdateChecking(true);
+    setUpdateInfo(null);
+    try {
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+      if (!res.ok) throw new Error('无法获取版本信息');
+      const data = await res.json();
+      const latest = data.tag_name?.replace(/^v/, '') || '';
+      // 简单版本比较
+      const hasUpdate = latest && latest !== APP_VERSION && latest > APP_VERSION;
+      setUpdateInfo({
+        hasUpdate,
+        latest,
+        notes: data.body || '暂无更新说明',
+        downloadUrl: data.html_url || `https://github.com/${GITHUB_REPO}/releases/latest`,
+      });
+    } catch {
+      setUpdateInfo({ hasUpdate: false, latest: APP_VERSION, notes: '检查更新失败，请稍后重试', downloadUrl: '' });
+    } finally {
+      setUpdateChecking(false);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -275,18 +286,60 @@ export default function Settings() {
           <Info size={14} />
           <span>Bambu Lab 打印历史导出工具</span>
         </div>
-        <p className="text-xs text-[var(--text-muted)]">
-          版本 1.0.0
-        </p>
-        <a
-          href="https://github.com/michaelggr/ha-printer-analytics"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline"
-        >
-          <ExternalLink size={14} />
-          Printer Analytics (HACS)
-        </a>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-[var(--text-muted)]">
+            版本 {APP_VERSION}
+          </p>
+          <button
+            onClick={handleCheckUpdate}
+            disabled={updateChecking}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
+          >
+            {updateChecking ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            {updateChecking ? '检查中...' : '检查更新'}
+          </button>
+        </div>
+        {updateInfo && (
+          <div className="rounded-lg bg-[var(--bg-primary)] p-3 text-xs space-y-2">
+            {updateInfo.hasUpdate ? (
+              <>
+                <p className="text-[var(--accent)]">发现新版本 v{updateInfo.latest}</p>
+                <p className="text-[var(--text-secondary)]">{updateInfo.notes}</p>
+                <a
+                  href={updateInfo.downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--bg-primary)] hover:opacity-90"
+                >
+                  <Download size={12} />
+                  下载更新
+                </a>
+              </>
+            ) : (
+              <p className="text-[var(--text-secondary)]">已是最新版本</p>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-4 pt-1">
+          <a
+            href={`https://github.com/${GITHUB_REPO}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline"
+          >
+            <ExternalLink size={14} />
+            GitHub
+          </a>
+          <a
+            href="https://github.com/michaelggr/ha-printer-analytics"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline"
+          >
+            <ExternalLink size={14} />
+            Printer Analytics (HACS)
+          </a>
+        </div>
       </section>
     </div>
   );
