@@ -24,17 +24,36 @@ export function clearNativeData() {
   localStorage.removeItem(USER_KEY);
 }
 
+/**
+ * 原生 HTTP 请求 — 使用 Capacitor HTTP 插件绕过 CORS
+ * Capacitor WebView 中 fetch 会被 Bambu API 的 CORS 策略拦截
+ */
+async function nativeRequest(
+  url: string,
+  options: { method?: string; headers?: Record<string, string>; body?: any } = {},
+): Promise<{ status: number; data: any }> {
+  const { method = 'GET', headers = {}, body } = options;
+  // 动态导入 CapacitorHttp，仅在原生平台可用
+  const { CapacitorHttp } = await import('@capacitor/core');
+  const result = await CapacitorHttp.request({
+    url,
+    method,
+    headers: { 'Content-Type': 'application/json', ...headers },
+    data: body,
+  });
+  return { status: result.status, data: result.data };
+}
+
 /** 发送验证码 — POST /v1/user-service/login/sms */
 export async function nativeSendCode(account: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${BAMBU_API_BASE}/user-service/login/sms`, {
+    const { status } = await nativeRequest(`${BAMBU_API_BASE}/user-service/login/sms`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ account }),
+      body: { account },
     });
-    if (res.status === 429) return { success: false, error: '请求过于频繁，请稍后重试' };
-    if (res.status === 418) return { success: false, error: '需要人机验证，请稍后重试' };
-    if (!res.ok) return { success: false, error: `发送失败 (${res.status})` };
+    if (status === 429) return { success: false, error: '请求过于频繁，请稍后重试' };
+    if (status === 418) return { success: false, error: '需要人机验证，请稍后重试' };
+    if (status >= 400) return { success: false, error: `发送失败 (${status})` };
     return { success: true };
   } catch {
     return { success: false, error: '网络错误' };
@@ -47,12 +66,10 @@ export async function nativeLoginWithCode(
   code: string,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   try {
-    const res = await fetch(`${BAMBU_API_BASE}/user-service/login/sms/check`, {
+    const { data } = await nativeRequest(`${BAMBU_API_BASE}/user-service/login/sms/check`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ account, code }),
+      body: { account, code },
     });
-    const data = await res.json();
     if (data.accessToken) {
       saveToken(data.accessToken);
       return { success: true, token: data.accessToken };
@@ -69,12 +86,10 @@ export async function nativeLoginWithPassword(
   password: string,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   try {
-    const res = await fetch(`${BAMBU_API_BASE}/user-service/login`, {
+    const { data } = await nativeRequest(`${BAMBU_API_BASE}/user-service/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ account, password }),
+      body: { account, password },
     });
-    const data = await res.json();
     if (data.accessToken) {
       saveToken(data.accessToken);
       return { success: true, token: data.accessToken };
@@ -97,18 +112,16 @@ export async function nativeFetchHistory(): Promise<{ success: boolean; data?: a
     let hasMore = true;
 
     while (hasMore) {
-      const res = await fetch(
+      const { status, data } = await nativeRequest(
         `${BAMBU_API_BASE}/print-service/list?offset=${offset}&limit=${limit}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      if (res.status === 401) {
+      if (status === 401) {
         clearNativeData();
         return { success: false, error: '登录已过期，请重新登录' };
       }
-      const data = await res.json();
-      const records = data.data?.list || data.list || [];
+      const records = data?.data?.list || data?.list || [];
       allRecords = allRecords.concat(records);
-      // 返回数量等于 limit 说明还有下一页
       hasMore = records.length === limit;
       offset += limit;
     }
