@@ -47,10 +47,10 @@ function createWindow(port) {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadURL(`http://localhost:${port}`);
   }
-  mainWindow.webContents.openDevTools();
   mainWindow.on('closed', () => { mainWindow = null; });
 
   // 外部链接用系统浏览器打开，不在应用内导航
