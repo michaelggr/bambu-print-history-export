@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Printer, TrendingUp, Package, Clock, Monitor, Palette,
-  RefreshCw, Camera, CheckCircle2,
+  RefreshCw, Camera, CheckCircle2, Share2,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import StatsCard from '@/components/StatsCard';
 import { formatWeight } from '@/utils/format';
+import { isNative } from '@/utils/platform';
 
 // ---------------------------------------------------------------------------
 // 类型定义 — 对齐后端 StatsResult 结构
@@ -551,7 +552,44 @@ export default function Stats() {
         logging: false,
       });
 
-      // 保存到本地
+      // 原生平台：调起系统分享
+      if (isNative()) {
+        try {
+          const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+          if (blob) {
+            const { Share } = await import('@capacitor/share');
+            const { Filesystem, Directory } = await import('@capacitor/filesystem');
+            // 先写入临时文件
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            const fileName = `bambu_stats_${Date.now()}.png`;
+            const writeResult = await Filesystem.writeFile({
+              path: fileName,
+              data: base64,
+              directory: Directory.Cache,
+            });
+            // 调起系统分享
+            await Share.share({
+              title: 'Bambu Lab 打印统计',
+              text: '我的 3D 打印统计数据',
+              url: writeResult.uri,
+              dialogTitle: '分享打印统计',
+            });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
+            return;
+          }
+        } catch (e: any) {
+          // 用户取消分享不报错
+          if (e?.message?.includes('cancel')) return;
+          // 分享失败，回退到普通保存
+        }
+      }
+
+      // Web/Electron：保存到本地 + 复制到剪贴板
       const link = document.createElement('a');
       link.download = `bambu_stats_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = canvas.toDataURL('image/png');
@@ -605,14 +643,14 @@ export default function Stats() {
       <div className="flex items-center justify-between">
         <h1 className="font-mono-heading text-xl font-bold text-[var(--text-primary)]">分析统计</h1>
         <div className="flex items-center gap-2">
-          {/* 保存为图片按钮 */}
+          {/* 保存/分享按钮 */}
           <button
             onClick={handleSaveImage}
             disabled={savingImg}
             className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
           >
-            {saveSuccess ? <CheckCircle2 size={14} className="text-[#00E676]" /> : <Camera size={14} />}
-            {saveSuccess ? '已保存' : savingImg ? '保存中...' : '保存图片'}
+            {saveSuccess ? <CheckCircle2 size={14} className="text-[#00E676]" /> : isNative() ? <Share2 size={14} /> : <Camera size={14} />}
+            {saveSuccess ? '已保存' : savingImg ? '处理中...' : isNative() ? '分享图片' : '保存图片'}
           </button>
           <button
             onClick={fetchStats}
