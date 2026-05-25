@@ -5,11 +5,7 @@ import useAppStore from '@/store';
 import { api } from '@/utils/api';
 
 /** 当前版本号 */
-<<<<<<< Updated upstream
 const APP_VERSION = '2.1.0';
-=======
-const APP_VERSION = '2.0.0';
->>>>>>> Stashed changes
 /** GitHub 仓库 */
 const GITHUB_REPO = 'michaelggr/bambu-print-history-export';
 /** QQ 交流群链接 */
