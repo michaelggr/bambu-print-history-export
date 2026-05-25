@@ -246,7 +246,6 @@ function DetailModal({
             <FieldRow label="耗材重量">{formatWeight(totalWeight)}</FieldRow>
             <FieldRow label="耗材长度">{formatLength(totalLength)}</FieldRow>
             <FieldRow label="喷嘴直径">{nozzleSize}</FieldRow>
-            <FieldRow label="喷嘴类型">{nozzleType}</FieldRow>
             <FieldRow label="热床类型">{bedType}</FieldRow>
             <FieldRow label="切片模式">{sliceMode}</FieldRow>
             <FieldRow label="使用AMS">{useAms}</FieldRow>
@@ -521,8 +520,8 @@ export default function History() {
 
       {/* ===== 记录表格 ===== */}
       <div className="flex-1 overflow-hidden rounded-lg border border-[var(--border)]">
-        <div className="h-full overflow-auto">
-          <table className="w-full border-collapse text-sm">
+        <div className="h-full overflow-x-auto">
+          <table className="w-full min-w-[800px] border-collapse text-sm">
             {/* 表头 */}
             <thead className="sticky top-0 z-10 bg-[var(--bg-secondary)]">
               <tr className="text-left text-xs text-[var(--text-muted)]">

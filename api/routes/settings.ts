@@ -13,7 +13,8 @@ const router = Router()
  */
 router.get('/', (_req: Request, res: Response): void => {
   const settings = cache.loadSettings()
-  res.json({ success: true, data: settings })
+  const historyCache = cache.loadHistoryCache()
+  res.json({ success: true, data: { ...settings, cacheCount: Array.isArray(historyCache) ? historyCache.length : 0 } })
 })
 
 /**

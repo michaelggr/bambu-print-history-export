@@ -400,7 +400,7 @@ function ExtremesCard({ extremes }: { extremes: PeriodStats['extremes'] }) {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {items.map((it) => (
         <div key={it.label} className="rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)]/40 p-4">
           <p className="text-xs text-[var(--text-muted)]">{it.label}</p>
@@ -628,7 +628,7 @@ export default function Stats() {
       {/* 可截图区域 */}
       <div ref={contentRef} className="space-y-6">
         {/* 统计卡片网格 */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatsCard icon={<Printer size={18} />} value={life.total_prints} label="总打印次数" />
           <StatsCard icon={<TrendingUp size={18} />} value={`${life.success_rate}%`} label="成功率" />
           <StatsCard icon={<Package size={18} />} value={formatWeight(life.total_weight_g)} label="总耗材" />
@@ -674,7 +674,7 @@ export default function Stats() {
         {/* 新增分析项：喷嘴尺寸 + 切片模式 + 占比指标 */}
         <section>
           <SectionTitle>打印参数分析</SectionTitle>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] p-4">
               <h3 className="mb-2 text-sm font-medium text-[var(--text-secondary)]">喷嘴尺寸分布</h3>
               <NozzleSizeChart dist={life.nozzle_size_distribution} />
@@ -689,7 +689,7 @@ export default function Stats() {
         {/* 占比指标：超500g + 多色模型 */}
         <section>
           <SectionTitle>模型特征占比</SectionTitle>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <RateCard label="超500g模型占比" count={life.over_500g_count} rate={life.over_500g_rate} total={life.total_prints} />
             <RateCard label="多色模型占比" count={life.multi_color_count} rate={life.multi_color_rate} total={life.total_prints} />
           </div>

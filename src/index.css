@@ -54,3 +54,40 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* 移动端适配 */
+@media (max-width: 767px) {
+  /* 底部导航栏占位，防止内容被遮挡 */
+  main {
+    padding-bottom: 60px !important;
+  }
+
+  /* 触控优化 */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    min-height: 36px;
+  }
+
+  /* 表格横向滚动 */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 禁止文字选择（移动端体验更好） */
+  nav, aside {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* 安全区域适配（刘海屏等） */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .fixed.bottom-0 {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (max-width: 767px) {
+    main {
+      padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+}

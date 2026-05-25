@@ -2,7 +2,7 @@
  * Electron 主进程入口
  * 在主进程中直接启动 Express 后端 → 打开窗口加载前端
  */
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -52,6 +52,20 @@ function createWindow(port) {
   }
   mainWindow.webContents.openDevTools();
   mainWindow.on('closed', () => { mainWindow = null; });
+
+  // 外部链接用系统浏览器打开，不在应用内导航
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const current = mainWindow.webContents.getURL();
+    // 允许 localhost 导航（前端路由），其他用系统浏览器
+    if (!url.startsWith('http://localhost')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 }
 
 app.whenReady().then(async () => {
