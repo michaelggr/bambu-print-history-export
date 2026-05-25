@@ -1,11 +1,7 @@
 {
   "name": "bambu-export",
   "private": true,
-<<<<<<< Updated upstream
   "version": "2.1.0",
-=======
-  "version": "2.0.0",
->>>>>>> Stashed changes
   "type": "module",
   "description": "Bambu Lab 打印历史导出工具",
   "main": "electron/main.cjs",
