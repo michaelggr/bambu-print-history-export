@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * Bambu Cloud API 服务
  * 负责与 Bambu Cloud API 通信：登录、发送验证码、获取打印历史、数据转换、统计计算
  */
@@ -221,24 +221,13 @@ async function post(url: string, data: Record<string, unknown>): Promise<Record<
   try {
     const { buffer, statusCode } = await httpsRequest(url, options, body)
     const text = decodeResponse(buffer)
-    // 写日志到文件，便于调试
-    const logLine = `[${new Date().toISOString()}] POST ${urlObj.pathname} HTTP=${statusCode} => ${text?.slice(0, 500)}\n`
-    try {
-      const fs = await import('fs')
-      const path = await import('path')
-      const logDir = process.env.DATA_DIR || path.resolve(__dirname, '../../data')
-      fs.appendFileSync(path.join(logDir, 'api_debug.log'), logLine)
-    } catch { /* ignore */ }
     if (!text) {
       // 空响应体：HTTP 2xx 视为成功，其他视为失败
       if (statusCode >= 200 && statusCode < 300) return {}
-      console.error(`POST ${url} 失败: HTTP ${statusCode}, 空响应体`)
       return null
     }
     return JSON.parse(text) as Record<string, unknown>
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.error(`POST ${url} 失败:`, msg)
+  } catch {
     return null
   }
 }
@@ -259,9 +248,7 @@ async function get(url: string, token: string): Promise<Record<string, unknown> 
     const text = decodeResponse(buffer)
     if (!text) return null
     return JSON.parse(text) as Record<string, unknown>
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.error(`GET ${url} 失败:`, msg)
+  } catch {
     return null
   }
 }
@@ -291,10 +278,7 @@ export async function login(
   password?: string,
   code?: string
 ): Promise<string | null> {
-  if (!account) {
-    console.warn('登录失败: 账号为空')
-    return null
-  }
+  if (!account) return null
 
   const base = getBaseUrl(account)
   const url = `${base}/v1/user-service/user/login`
@@ -306,32 +290,19 @@ export async function login(
   } else if (code) {
     body.code = code
   } else {
-    console.warn('登录失败: 未提供密码或验证码')
     return null
   }
 
-  console.info(`尝试登录: ${account.slice(0, 3)}*** (${isPhone(account) ? 'CN' : 'Global'})`)
   const result = await post(url, body)
 
-  if (!result) {
-    console.error('登录请求失败: 网络错误')
-    return null
-  }
+  if (!result) return null
 
-  // 打印完整响应便于调试
-  console.info(`登录响应: statusCode=${result.statusCode}, hasAccessToken=${'accessToken' in result}, keys=${Object.keys(result).join(',')}`)
-
-  const statusCode = result.statusCode as number | undefined
   // Bambu API 成功时 statusCode 可能为 0、200 或无此字段
+  const statusCode = result.statusCode as number | undefined
   const isSuccess = (statusCode === undefined || statusCode === 0 || statusCode === 200) && 'accessToken' in result
 
-  if (isSuccess) {
-    console.info('登录成功')
-    return result.accessToken as string
-  }
+  if (isSuccess) return result.accessToken as string
 
-  const errorMsg = (result.message ?? result.error ?? '') as string
-  console.warn(`登录失败: statusCode=${statusCode}, message=${errorMsg}`)
   return null
 }
 
@@ -341,10 +312,7 @@ export async function login(
  * - 邮箱   → 发送邮箱验证码
  */
 export async function sendCode(account: string): Promise<boolean> {
-  if (!account) {
-    console.warn('发送验证码失败: 账号为空')
-    return false
-  }
+  if (!account) return false
 
   const base = getBaseUrl(account)
   let url: string
@@ -358,16 +326,9 @@ export async function sendCode(account: string): Promise<boolean> {
     body = { email: account, type: 'codeLogin' }
   }
 
-  console.info(`发送验证码: ${account.slice(0, 3)}***`)
   const result = await post(url, body)
 
-  if (!result) {
-    console.error('发送验证码: API 无响应')
-    return false
-  }
-
-  // 打印完整响应便于调试
-  console.info(`发送验证码响应: statusCode=${result.statusCode}, error=${result.error ?? ''}, keys=${Object.keys(result).join(',')}`)
+  if (!result) return false
 
   // Bambu API 成功时 statusCode 可能为 0、200 或无此字段
   // 检查明确的错误信号：statusCode 错误码 或 error/captchaId 字段存在
@@ -375,14 +336,7 @@ export async function sendCode(account: string): Promise<boolean> {
   const hasStatusError = statusCode !== undefined && statusCode !== 0 && statusCode !== 200
   const hasErrorMsg = !!(result.error || result.captchaId)
 
-  if (hasStatusError || hasErrorMsg) {
-    const errorMsg = (result.message ?? result.error ?? '验证码发送失败') as string
-    console.warn(`发送验证码失败: statusCode=${statusCode}, message=${errorMsg}`)
-    return false
-  }
-
-  console.info('验证码发送成功')
-  return true
+  return !(hasStatusError || hasErrorMsg)
 }
 
 // ---------------------------------------------------------------------------
@@ -417,30 +371,20 @@ export async function fetchHistory(
   existingIds?: Set<string>,
   onProgress?: (fetched: number, total: number) => void
 ): Promise<BambuHistoryItem[]> {
-  if (!token) {
-    console.warn('fetchHistory: token 为空')
-    return []
-  }
+  if (!token) return []
 
   let allItems: BambuHistoryItem[] = []
 
   // 按优先级尝试两个区域
   for (const baseUrl of [API_CN, API_GLOBAL]) {
-    console.info(`尝试从 ${baseUrl} 获取历史记录`)
-
     // 先获取第一页确定总数
     const { items, total } = await fetchHistoryPage(token, baseUrl, 0)
     if (items === null) {
-      if (total === -1) {
-        console.warn('Token 已失效，需要重新登录')
-        return []
-      }
-      console.warn(`从 ${baseUrl} 获取第一页失败，尝试下一个区域`)
+      if (total === -1) return [] // Token 已失效
       continue
     }
 
     allItems = allItems.concat(items)
-    console.info(`获取第一页: ${items.length} 条, 总计 ${total} 条`)
     onProgress?.(allItems.length, total)
 
     // 继续分页获取
@@ -451,16 +395,9 @@ export async function fetchHistory(
     while (offset < total) {
       const page = await fetchHistoryPage(token, baseUrl, offset)
       if (page.items === null) {
-        if (page.total === -1) {
-          console.warn('Token 已失效（分页获取时），需要重新登录')
-          return []
-        }
+        if (page.total === -1) return [] // Token 已失效
         retryCount++
-        if (retryCount >= maxRetries) {
-          console.warn(`连续 ${maxRetries} 次获取失败，停止分页`)
-          break
-        }
-        console.warn(`获取 offset=${offset} 失败，重试 (${retryCount}/${maxRetries})`)
+        if (retryCount >= maxRetries) break
         continue
       }
       retryCount = 0
@@ -475,12 +412,9 @@ export async function fetchHistory(
 
   // 过滤已存在的记录
   if (existingIds && existingIds.size > 0) {
-    const beforeCount = allItems.length
     allItems = allItems.filter(item => !existingIds.has(item.id ?? ''))
-    console.info(`增量过滤: ${beforeCount} → ${allItems.length} 条`)
   }
 
-  console.info(`共获取 ${allItems.length} 条记录`)
   return allItems
 }
 
