@@ -14,6 +14,10 @@ const config: CapacitorConfig = {
       launchShowDuration: 2000,
       backgroundColor: '#0F1117',
     },
+    // 启用 CapacitorHttp 插件，绕过 CORS 限制
+    CapacitorHttp: {
+      enabled: true,
+    },
   },
 };
 
