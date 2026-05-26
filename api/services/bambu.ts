@@ -131,6 +131,7 @@ export interface PeriodStats {
     shortest: { name: string; hours: number }
     heaviest: { name: string; weight_g: number }
     lightest: { name: string; weight_g: number }
+    most_colors: { name: string; count: number }
   }
   /** 喷嘴尺寸分布：如 { "0.4": 250, "0.2": 10 } */
   nozzle_size_distribution: Record<string, number>
@@ -745,6 +746,7 @@ function calcPeriodStats(history: BambuHistoryItem[]): PeriodStats {
   let shortest = { name: '', hours: Infinity }
   let heaviest = { name: '', weight_g: 0 }
   let lightest = { name: '', weight_g: Infinity }
+  let mostColors = { name: '', count: 0 }
 
   for (const item of history) {
     const status = item.status ?? 0
@@ -818,6 +820,7 @@ function calcPeriodStats(history: BambuHistoryItem[]): PeriodStats {
     // 多色模型
     const colorsUsed = extractColorsUsed(item)
     if (colorsUsed.length > 1) multiColorCount++
+    if (colorsUsed.length > mostColors.count) mostColors = { name: taskName, count: colorsUsed.length }
 
     // 极值追踪（仅成功的记录参与）
     if (status === 2) {
@@ -849,7 +852,7 @@ function calcPeriodStats(history: BambuHistoryItem[]): PeriodStats {
     monthly,
     duration_distribution: durationDistribution,
     failure_stage_distribution: failureStageDist,
-    extremes: { longest, shortest, heaviest, lightest },
+    extremes: { longest, shortest, heaviest, lightest, most_colors: mostColors },
     nozzle_size_distribution: nozzleSizeDist,
     over_500g_count: over500gCount,
     over_500g_rate: total > 0 ? Math.round(over500gCount / total * 1000) / 10 : 0,
