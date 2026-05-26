@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 安卓/原生端统计计算 — 从 Bambu Cloud 原始记录计算完整统计数据
  * 逻辑对齐后端 api/services/bambu.ts 的 calculateStats()
  */
@@ -52,6 +52,7 @@ export interface NativePeriodStats {
     shortest: { name: string; hours: number };
     heaviest: { name: string; weight_g: number };
     lightest: { name: string; weight_g: number };
+    most_colors: { name: string; count: number };
   };
   nozzle_size_distribution: Record<string, number>;
   over_500g_count: number;
@@ -202,6 +203,7 @@ function calcPeriodStats(history: NativeBambuItem[]): NativePeriodStats {
   let shortest = { name: '', hours: Infinity };
   let heaviest = { name: '', weight_g: 0 };
   let lightest = { name: '', weight_g: Infinity };
+  let mostColors = { name: '', count: 0 };
 
   for (const item of history) {
     const status = item.status ?? 0;
@@ -266,7 +268,9 @@ function calcPeriodStats(history: NativeBambuItem[]): NativePeriodStats {
     sliceModeDist[sliceMode] = (sliceModeDist[sliceMode] ?? 0) + 1;
 
     // 多色
-    if (extractColorsUsed(item).length > 1) multiColorCount++;
+    const colorCount = extractColorsUsed(item).length;
+    if (colorCount > 1) multiColorCount++;
+    if (colorCount > mostColors.count) mostColors = { name: taskName, count: colorCount };
 
     // 极值（仅成功记录）
     if (status === 2) {
@@ -297,7 +301,7 @@ function calcPeriodStats(history: NativeBambuItem[]): NativePeriodStats {
     monthly,
     duration_distribution: durationDist,
     failure_stage_distribution: failureStageDist,
-    extremes: { longest, shortest, heaviest, lightest },
+    extremes: { longest, shortest, heaviest, lightest, most_colors: mostColors },
     nozzle_size_distribution: nozzleSizeDist,
     over_500g_count: over500gCount,
     over_500g_rate: total > 0 ? Math.round(over500gCount / total * 1000) / 10 : 0,
