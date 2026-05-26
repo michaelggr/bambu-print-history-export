@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿﻿﻿﻿/**
  * 服务端打包入口（esbuild 使用）
  * 将 ESM TypeScript 打包为单个 CJS 文件供 Electron 加载
  *
