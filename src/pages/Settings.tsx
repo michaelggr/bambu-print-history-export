@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Trash2, Info, ExternalLink, Loader2, RefreshCw, Download, MessageCircle } from 'lucide-react';
 import useAppStore from '@/store';
 import { api } from '@/utils/api';
+import { isNative, isElectron } from '@/utils/platform';
 
 /** 当前版本号 */
 const APP_VERSION = '2.2.0';
@@ -102,6 +103,36 @@ export default function Settings() {
       setUpdateInfo({ hasUpdate: false, latest: APP_VERSION, notes: '检查更新失败，请稍后重试', downloadUrl: '' });
     } finally {
       setUpdateChecking(false);
+    }
+  }, []);
+
+  /** 打开 QQ 群 — 根据平台拉起对应版本的 QQ */
+  const handleQQGroup = useCallback(async () => {
+    const qqUrl = 'https://qm.qq.com/q/9paJFuZbCE';
+
+    if (isNative()) {
+      // 安卓端：尝试通过 deep link 拉起手机 QQ
+      try {
+        const encodedUrl = encodeURIComponent(qqUrl);
+        // 方案1：QQ 开放 SDK 协议（最可靠）
+        (window as any).location.href = `mqqopensdkapi://bizAgent/qm/qr?url=${encodedUrl}`;
+        // 如果 1.5 秒后还在当前页面，说明 QQ 未安装，回退到浏览器
+        setTimeout(() => {
+          window.open(qqUrl, '_blank');
+        }, 1500);
+      } catch {
+        window.open(qqUrl, '_blank');
+      }
+    } else if (isElectron()) {
+      // 电脑端：通过 Electron shell 打开，会自动唤起桌面版 QQ
+      try {
+        await (window as any).electronAPI?.openExternal?.(qqUrl);
+      } catch {
+        window.open(qqUrl, '_blank');
+      }
+    } else {
+      // Web 端：浏览器打开
+      window.open(qqUrl, '_blank');
     }
   }, []);
 
@@ -207,10 +238,10 @@ export default function Settings() {
             className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline">
             <ExternalLink size={14} />Printer Analytics (HACS)
           </a>
-          <a href={QQ_GROUP_URL} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline">
+          <button onClick={handleQQGroup}
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline bg-transparent border-none cursor-pointer">
             <MessageCircle size={14} />QQ 交流群
-          </a>
+          </button>
         </div>
       </section>
     </div>
