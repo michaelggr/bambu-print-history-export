@@ -523,6 +523,31 @@ export default function Stats() {
     setLoading(true);
     setError(null);
     try {
+      if (isNative()) {
+        // 安卓端：从缓存数据计算统计（与 api.ts 逻辑一致）
+        const { nativeGetCachedHistory } = await import('@/utils/native-api');
+        const records = nativeGetCachedHistory();
+        const emptyPeriod = {
+          total_prints: records.length, successful_prints: 0, failed_prints: 0, cancelled_prints: 0,
+          success_rate: 0, total_weight_g: 0, total_duration_hours: 0,
+          devices: {} as Record<string, number>, filaments: {} as Record<string, number>,
+          monthly: {} as Record<string, number>, duration_distribution: {} as Record<string, number>,
+          failure_stage_distribution: {} as Record<string, number>,
+          extremes: { longest: { name: '', hours: 0 }, shortest: { name: '', hours: 0 }, heaviest: { name: '', weight_g: 0 }, lightest: { name: '', weight_g: 0 } },
+          nozzle_size_distribution: {} as Record<string, number>, over_500g_count: 0, over_500g_rate: 0,
+          slice_mode_distribution: {} as Record<string, number>, multi_color_count: 0, multi_color_rate: 0,
+        };
+        setData({
+          stats_lifetime: emptyPeriod,
+          stats_7d: { ...emptyPeriod, total_prints: 0 },
+          stats_30d: { ...emptyPeriod, total_prints: 0 },
+          activity_heatmap: {},
+          filament_success_stats: {},
+          color_usage_stats: {},
+        } as unknown as StatsData);
+        return;
+      }
+
       const res = await fetch('/api/history/stats');
       if (!res.ok) throw new Error(`请求失败: ${res.status}`);
       const json = await res.json();

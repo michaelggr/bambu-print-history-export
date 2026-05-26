@@ -2,6 +2,8 @@
 import { FileJson, FileSpreadsheet, Plug, Download, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAppStore from '@/store';
+import { isNative } from '@/utils/platform';
+import * as nativeApi from '@/utils/native-api';
 
 /** 导出格式 */
 type ExportFormat = 'json' | 'csv' | 'ha';
@@ -58,6 +60,11 @@ export default function Export() {
 
   // 从 API 获取总记录数
   useEffect(() => {
+    if (isNative()) {
+      const records = nativeApi.nativeGetCachedHistory();
+      setTotalCount(records.length);
+      return;
+    }
     fetch('/api/history?page=1&pageSize=1')
       .then((r) => r.json())
       .then((json) => {
@@ -66,8 +73,28 @@ export default function Export() {
       .catch(() => {});
   }, []);
 
-  /** 触发浏览器下载 */
-  const triggerDownload = useCallback((blob: Blob, ext: string) => {
+  /** 触发下载（Web 用 <a>，安卓端用剪贴板+提示） */
+  const triggerDownload = useCallback(async (blob: Blob, ext: string) => {
+    if (isNative()) {
+      // 安卓端 WebView 不支持 <a download>，降级为剪贴板
+      const text = await blob.text();
+      if (text.length > 180 * 1024) {
+        setError(`数据较大（${(text.length / 1024).toFixed(0)}KB），建议通过"全量下载"刷新后用数据线导出`);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        const msg = ext === 'csv' ? 'CSV 数据已复制到剪贴板，请粘贴到文件中' : 'JSON 数据已复制到剪贴板';
+        // 用 toast 替代 alert
+        setError(msg);
+        setTimeout(() => setError(''), 4000);
+      } catch {
+        setError('复制失败，请检查权限');
+      }
+      return;
+    }
+
+    // Web 端：标准 <a> 下载
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -84,7 +111,29 @@ export default function Export() {
     setExporting(true);
 
     try {
-      // 构建筛选参数
+      if (isNative()) {
+        // 安卓端：从本地缓存数据直接导出，不依赖后端
+        const records = nativeApi.nativeGetCachedHistory();
+        let content: string;
+        let ext: string;
+
+        if (format === 'json') {
+          content = JSON.stringify(records, null, 2);
+          ext = 'json';
+        } else if (format === 'csv') {
+          content = generateCSVNative(records);
+          ext = 'csv';
+        } else {
+          content = JSON.stringify(convertToHAFormatNative(records), null, 2);
+          ext = 'json';
+        }
+
+        const blob = new Blob([content], { type: 'application/json' });
+        triggerDownload(blob, ext);
+        return;
+      }
+
+      // Web 端：走后端 API
       const filters: Record<string, string> = {};
       if (status) filters.status = status;
       if (dateFrom) filters.dateFrom = dateFrom;
@@ -276,4 +325,50 @@ export default function Export() {
       </button>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// 安卓端本地导出辅助函数（不依赖后端）
+// ---------------------------------------------------------------------------
+
+/** 状态码 → 中文 */
+const STATUS_MAP: Record<number, string> = { 1: '打印中', 2: '成功', 3: '失败', 4: '已取消' };
+
+/** 安卓端：生成 CSV（与后端 export.ts 逻辑一致） */
+function generateCSVNative(records: any[]): string {
+  const columns = ['id', 'designTitle', 'status', 'deviceName', 'deviceModel', 'startTime', 'endTime', 'weight', 'length', 'costTime', 'filamentType', 'mode', 'bedType'];
+  const header = columns.join(',');
+  const rows = records.map((item: Record<string, unknown>) => {
+    return columns.map((col) => {
+      let val: unknown;
+      if (col === 'status') {
+        val = typeof item[col] === 'number' ? (STATUS_MAP[item[col] as number] ?? String(item[col])) : String(item[col]);
+      } else if (col === 'filamentType') {
+        const ams = item.amsDetailMapping as Array<{ filamentType: string }> | undefined;
+        val = (Array.isArray(ams) && ams.length > 0) ? ams[0].filamentType : (item.filamentType ?? '');
+      } else {
+        val = (item as Record<string, unknown>)[col] ?? '';
+      }
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str.replace(/"/g, '""')}"`;
+      return str;
+    }).join(',');
+  });
+  return [header, ...rows].join('\n');
+}
+
+/** 安卓端：转换为 HA 插件格式 */
+function convertToHAFormatNative(records: any[]): any[] {
+  return records.map((item: Record<string, unknown>) => ({
+    task_name: item.designTitle ?? item.title ?? '',
+    status: typeof item.status === 'number' ? STATUS_MAP[item.status] ?? String(item.status) : String(item.status),
+    printer_serial: item.deviceId ?? '',
+    start_time: item.startTime ?? '',
+    end_time: item.endTime ?? '',
+    duration_hours: ((item.costTime as number) ?? 0) / 3600,
+    total_weight: item.weight ?? 0,
+    total_length: item.length ?? 0,
+    filament_type: item.filamentType ?? '',
+    filament_color: item.filamentColor ?? '',
+  }));
 }
