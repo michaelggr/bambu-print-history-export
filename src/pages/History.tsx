@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   DownloadCloud,
@@ -12,6 +12,8 @@ import {
 import StatusBadge from '@/components/StatusBadge';
 import { formatDateTime, formatDuration, formatWeight, rgbaToHex } from '@/utils/format';
 import { cn } from '@/lib/utils';
+import { isNative } from '@/utils/platform';
+import * as nativeApi from '@/utils/native-api';
 
 // ---------------------------------------------------------------------------
 // 类型定义 — 对齐后端 BambuHistoryItem
@@ -332,6 +334,23 @@ export default function History() {
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
+      if (isNative()) {
+        // 安卓端：从本地缓存分页
+        const records = nativeApi.nativeGetCachedHistory();
+        const total = records.length;
+        const start = (page - 1) * pageSize;
+        const pagedRecords = records.slice(start, start + pageSize);
+        setRecords(pagedRecords);
+        setTotal(total);
+        const deviceSet = new Set<string>();
+        for (const r of pagedRecords) {
+          if ((r as Record<string, unknown>).deviceName) deviceSet.add((r as Record<string, unknown>).deviceName as string);
+        }
+        setDevices((prev) => { const merged = new Set([...prev, ...deviceSet]); return Array.from(merged).sort(); });
+        return;
+      }
+
+      // Web 端：走后端 API
       const params = new URLSearchParams({
         page: String(page),
         pageSize: String(pageSize),
@@ -375,6 +394,17 @@ export default function History() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      if (isNative()) {
+        const result = await nativeApi.nativeFetchHistory();
+        if (result.success) {
+          showToast(`刷新完成，共 ${result.data?.length ?? 0} 条`, 'ok');
+        } else {
+          showToast(result.error ?? '刷新失败', 'err');
+        }
+        fetchHistory();
+        return;
+      }
+
       const res = await fetch('/api/history/refresh', { method: 'POST' });
       const json = (await res.json()) as ActionResponse;
       if (json.success) {
@@ -396,6 +426,17 @@ export default function History() {
   const handleFullDownload = async () => {
     setDownloading(true);
     try {
+      if (isNative()) {
+        const result = await nativeApi.nativeFetchHistory();
+        if (result.success) {
+          showToast(`全量下载完成，共 ${result.data?.length ?? 0} 条`, 'ok');
+          fetchHistory();
+        } else {
+          showToast(result.error ?? '全量下载失败', 'err');
+        }
+        return;
+      }
+
       const res = await fetch('/api/history/full-download', { method: 'POST' });
       const json = (await res.json()) as ActionResponse;
       if (json.success) {
