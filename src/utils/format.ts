@@ -1,4 +1,4 @@
-﻿﻿/** 打印状态 → 中文文本（Bambu API: 1=取消, 2=成功, 3=失败, 4=取消） */
+﻿﻿﻿﻿/** 打印状态 → 中文文本（Bambu API: 1=取消, 2=成功, 3=失败, 4=取消） */
 export function statusText(status: number): string {
   const map: Record<number, string> = {
     2: '成功',

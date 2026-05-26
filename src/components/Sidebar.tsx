@@ -25,9 +25,7 @@ export default function Sidebar() {
     <aside className="flex h-screen w-[200px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--bg-secondary)]">
       {/* 顶部 Logo */}
       <div className="flex h-14 items-center gap-2 border-b border-[var(--border)] px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
-          <History size={18} />
-        </div>
+        <img src="/logo.webp" alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
         <span className="font-mono-heading text-sm font-bold text-[var(--text-primary)]">
           Bambu
         </span>

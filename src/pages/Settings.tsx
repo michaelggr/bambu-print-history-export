@@ -1,11 +1,11 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Trash2, Info, ExternalLink, Loader2, RefreshCw, Download, MessageCircle } from 'lucide-react';
 import useAppStore from '@/store';
 import { api } from '@/utils/api';
 
 /** 当前版本号 */
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 /** GitHub 仓库 */
 const GITHUB_REPO = 'michaelggr/bambu-print-history-export';
 /** QQ 交流群链接 */
