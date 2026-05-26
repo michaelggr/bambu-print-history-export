@@ -1,8 +1,8 @@
-﻿/**
+﻿﻿/**
  * Electron 主进程入口
  * 在主进程中直接启动 Express 后端 → 打开窗口加载前端
  */
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -59,22 +59,35 @@ function createWindow(port) {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const current = mainWindow.webContents.getURL();
+    // 允许 localhost 导航（前端路由），其他用系统浏览器
+    if (!url.startsWith('http://localhost')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 }
 
-app.whenReady().then(async () => {
-  const port = await startServer();
-  createWindow(port);
+// IPC: 允许渲染进程调用 shell.openExternal（用于拉起 QQ 等外部应用）
+ipcMain.handle('open-external', async (event, url) => {
+  await shell.openExternal(url);
+});
 
+app.whenReady().then(async () => {
+  try {
+    const port = await startServer();
+    createWindow(port);
+  } catch (err) {
+    console.error('Failed to start:', err);
+    app.quit();
+  }
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow(port);
+    if (BrowserWindow.getAllWindows().length === 0) createWindow(3001);
   });
 });
 
 app.on('window-all-closed', () => {
-  // Windows/Linux 关闭所有窗口时退出
-  if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('before-quit', () => {
   if (serverHandle?.close) serverHandle.close();
+  if (process.platform !== 'darwin') app.quit();
 });
