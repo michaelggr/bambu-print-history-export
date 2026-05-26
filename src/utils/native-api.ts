@@ -13,6 +13,10 @@ const TOKEN_KEY = 'bambu_native_token';
 const HISTORY_KEY = 'bambu_native_history';
 const USER_KEY = 'bambu_native_user';
 
+function str(val: unknown): string {
+  return typeof val === 'string' ? val : '';
+}
+
 function isPhone(account: string): boolean {
   return !account.includes('@');
 }
@@ -78,7 +82,7 @@ export async function nativeSendCode(account: string): Promise<{ success: boolea
     const hasStatusError = statusCode !== undefined && statusCode !== 0 && statusCode !== 200;
     const hasErrorMsg = !!data?.error;
     return hasStatusError || hasErrorMsg
-      ? { success: false, error: data?.message || data?.error || '发送验证码失败' }
+      ? { success: false, error: str(data?.message) || str(data?.error) || '发送验证码失败' }
       : { success: true };
   } catch {
     return { success: false, error: '网络错误' };
@@ -95,10 +99,10 @@ export async function nativeLoginWithCode(
       body: { account, code },
     });
     if (data?.accessToken) {
-      saveToken(data.accessToken);
-      return { success: true, token: data.accessToken };
+      saveToken(str(data.accessToken));
+      return { success: true, token: str(data.accessToken) };
     }
-    return { success: false, error: data?.message || data?.error || '登录失败' };
+    return { success: false, error: str(data?.message) || str(data?.error) || '登录失败' };
   } catch {
     return { success: false, error: '网络错误' };
   }
@@ -114,10 +118,10 @@ export async function nativeLoginWithPassword(
       body: { account, password, apiError: '' },
     });
     if (data?.accessToken) {
-      saveToken(data.accessToken);
-      return { success: true, token: data.accessToken };
+      saveToken(str(data.accessToken));
+      return { success: true, token: str(data.accessToken) };
     }
-    return { success: false, error: data?.message || data?.error || '登录失败' };
+    return { success: false, error: str(data?.message) || str(data?.error) || '登录失败' };
   } catch {
     return { success: false, error: '网络错误' };
   }
@@ -133,7 +137,7 @@ export async function nativeFetchHistory(): Promise<{ success: boolean; data?: J
       let offset = 0;
       const limit = 20;
       let total = 0;
-      let recordsInRegion: any[] = [];
+      let recordsInRegion: JsonObject[] = [];
 
       do {
         const { status, data } = await nativeRequest(
@@ -144,8 +148,8 @@ export async function nativeFetchHistory(): Promise<{ success: boolean; data?: J
           clearNativeData();
           return { success: false, error: '登录已过期，请重新登录' };
         }
-        const records = data?.hits || data?.tasks || [];
-        total = data?.total || data?.count || records.length;
+        const records = (data?.hits || data?.tasks || []) as JsonObject[];
+        total = (data?.total ?? data?.count ?? records.length) as number;
         recordsInRegion = recordsInRegion.concat(records);
         offset += limit;
       } while (offset < total);
