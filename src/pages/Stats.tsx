@@ -57,6 +57,7 @@ interface PeriodStats {
     shortest: { name: string; hours: number };
     heaviest: { name: string; weight_g: number };
     lightest: { name: string; weight_g: number };
+    most_colors: { name: string; count: number };
   };
   nozzle_size_distribution: Record<string, number>;
   over_500g_count: number;
@@ -184,35 +185,33 @@ function DeviceDistribution({ devices }: { devices: PeriodStats['devices'] }) {
   );
 }
 
-/** 耗材统计表 */
+/** 耗材统计表 — 精简列宽确保手机端无需滑动 */
 function FilamentTable({ data }: { data: Record<string, FilamentSuccessDetail> }) {
   const entries = Object.entries(data);
   if (entries.length === 0) return <EmptyBlock />;
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+    <div className="rounded-lg border border-[var(--border)]">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-[var(--bg-tertiary)]">
-            <th className="px-3 py-2 text-left text-[var(--text-secondary)]">类型</th>
-            <th className="px-3 py-2 text-right text-[var(--text-secondary)]">次数</th>
-            <th className="px-3 py-2 text-right text-[var(--text-secondary)]">成功</th>
-            <th className="px-3 py-2 text-right text-[var(--text-secondary)]">失败</th>
-            <th className="px-3 py-2 text-right text-[var(--text-secondary)]">取消</th>
-            <th className="px-3 py-2 text-right text-[var(--text-secondary)]">重量</th>
-            <th className="px-3 py-2 text-right text-[var(--text-secondary)]">成功率</th>
+            <th className="px-2 py-2 text-left text-[var(--text-secondary)]">类型</th>
+            <th className="px-2 py-2 text-right text-[var(--text-secondary)]">次数</th>
+            <th className="px-2 py-2 text-right text-[var(--text-secondary)]">成功</th>
+            <th className="px-2 py-2 text-right text-[var(--text-secondary)]">失败</th>
+            <th className="px-2 py-2 text-right text-[var(--text-secondary)]">重量</th>
+            <th className="px-2 py-2 text-right text-[var(--text-secondary)]">成功率</th>
           </tr>
         </thead>
         <tbody>
           {entries.map(([type, s], i) => (
             <tr key={type} className={i % 2 === 0 ? 'bg-[var(--bg-secondary)]' : 'bg-[var(--bg-tertiary)]/40'}>
-              <td className="px-3 py-2 text-[var(--text-primary)]">{type}</td>
-              <td className="px-3 py-2 text-right font-mono-heading text-[var(--text-primary)]">{s.total}</td>
-              <td className="px-3 py-2 text-right font-mono-heading text-[#00E676]">{s.success}</td>
-              <td className="px-3 py-2 text-right font-mono-heading text-[#FF5252]">{s.failed}</td>
-              <td className="px-3 py-2 text-right font-mono-heading text-[var(--text-muted)]">{s.cancelled}</td>
-              <td className="px-3 py-2 text-right font-mono-heading text-[var(--text-primary)]">{formatWeight(s.weight_g)}</td>
-              <td className="px-3 py-2 text-right">
+              <td className="px-2 py-2 text-[var(--text-primary)]">{type}</td>
+              <td className="px-2 py-2 text-right font-mono-heading text-[var(--text-primary)]">{s.total}</td>
+              <td className="px-2 py-2 text-right font-mono-heading text-[#00E676]">{s.success}</td>
+              <td className="px-2 py-2 text-right font-mono-heading text-[#FF5252]">{s.failed}</td>
+              <td className="px-2 py-2 text-right font-mono-heading text-[var(--text-primary)]">{formatWeight(s.weight_g)}</td>
+              <td className="px-2 py-2 text-right">
                 <span className="font-mono-heading" style={{ color: rateColor(s.success_rate) }}>{s.success_rate}%</span>
               </td>
             </tr>
@@ -397,12 +396,14 @@ function DurationDistribution({ dist }: { dist: Record<string, number> }) {
 function ExtremesCard({ extremes }: { extremes: PeriodStats['extremes'] }) {
   const items = [
     { label: '最长打印', name: extremes.longest.name, value: fmtHours(extremes.longest.hours) },
-    { label: '最重打印', name: extremes.heaviest.name, value: formatWeight(extremes.heaviest.weight_g) },
     { label: '最短打印', name: extremes.shortest.name, value: fmtHours(extremes.shortest.hours) },
+    { label: '最重打印', name: extremes.heaviest.name, value: formatWeight(extremes.heaviest.weight_g) },
+    { label: '最轻打印', name: extremes.lightest.name, value: formatWeight(extremes.lightest.weight_g) },
+    { label: '最多颜色', name: extremes.most_colors.name, value: extremes.most_colors.count > 0 ? `${extremes.most_colors.count} 色` : '-' },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       {items.map((it) => (
         <div key={it.label} className="rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)]/40 p-4">
           <p className="text-xs text-[var(--text-muted)]">{it.label}</p>
@@ -554,12 +555,20 @@ export default function Stats() {
     try {
       // 动态导入 html2canvas
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(contentRef.current, {
+      // 截图前临时固定宽度，确保手机端内容不溢出
+      const el = contentRef.current;
+      const originalWidth = el.style.width;
+      el.style.width = '800px';
+      const canvas = await html2canvas(el, {
         backgroundColor: '#0D1117',
         scale: 2,
         useCORS: true,
         logging: false,
+        width: 800,
+        windowWidth: 800,
       });
+      // 恢复原始宽度
+      el.style.width = originalWidth;
 
       // 原生平台：调起系统分享
       if (isNative()) {
