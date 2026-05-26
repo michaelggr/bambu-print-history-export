@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * Electron 主进程入口
  * 在主进程中直接启动 Express 后端 → 打开窗口加载前端
  */
@@ -42,6 +42,7 @@ function createWindow(port) {
   mainWindow = new BrowserWindow({
     width: 1200, height: 800, minWidth: 900, minHeight: 600,
     title: 'Bambu Lab 打印历史导出工具',
+    icon: path.join(__dirname, '../resources/icon.png'),
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
 
@@ -58,30 +59,22 @@ function createWindow(port) {
     shell.openExternal(url);
     return { action: 'deny' };
   });
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    const current = mainWindow.webContents.getURL();
-    // 允许 localhost 导航（前端路由），其他用系统浏览器
-    if (!url.startsWith('http://localhost')) {
-      event.preventDefault();
-      shell.openExternal(url);
-    }
-  });
 }
 
 app.whenReady().then(async () => {
-  try {
-    const port = await startServer();
-    createWindow(port);
-  } catch (err) {
-    console.error('Failed to start:', err);
-    app.quit();
-  }
+  const port = await startServer();
+  createWindow(port);
+
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow(3001);
+    if (BrowserWindow.getAllWindows().length === 0) createWindow(port);
   });
 });
 
 app.on('window-all-closed', () => {
-  if (serverHandle?.close) serverHandle.close();
+  // Windows/Linux 关闭所有窗口时退出
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  if (serverHandle?.close) serverHandle.close();
 });
