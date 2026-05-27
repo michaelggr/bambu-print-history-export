@@ -32,12 +32,12 @@ const HA_FIELDS = [
   'cover_image_url',
 ];
 
-/** 状态筛选选项 */
+/** 状态筛选选项 — 对齐 Bambu 状态码：2=成功, 3=失败, 1/4=取消 */
 const STATUS_OPTIONS = [
   { value: '', label: '全部状态' },
-  { value: '1', label: '成功' },
-  { value: '0', label: '失败' },
-  { value: '2', label: '取消' },
+  { value: '2', label: '成功' },
+  { value: '3', label: '失败' },
+  { value: '1,4', label: '取消' },
 ];
 
 /** 获取今日日期字符串（用于文件名） */
@@ -73,23 +73,53 @@ export default function Export() {
       .catch(() => {});
   }, []);
 
-  /** 触发下载（Web 用 <a>，安卓端用剪贴板+提示） */
+  /** 触发下载（Web 用 <a>，安卓端用 Filesystem+Share） */
   const triggerDownload = useCallback(async (blob: Blob, ext: string) => {
     if (isNative()) {
-      // 安卓端 WebView 不支持 <a download>，降级为剪贴板
-      const text = await blob.text();
-      if (text.length > 180 * 1024) {
-        setError(`数据较大（${(text.length / 1024).toFixed(0)}KB），建议通过"全量下载"刷新后用数据线导出`);
-        return;
-      }
+      // 安卓端：使用 Capacitor Filesystem 写文件 + Share 分享
       try {
-        await navigator.clipboard.writeText(text);
-        const msg = ext === 'csv' ? 'CSV 数据已复制到剪贴板，请粘贴到文件中' : 'JSON 数据已复制到剪贴板';
-        // 用 toast 替代 alert
-        setError(msg);
-        setTimeout(() => setError(''), 4000);
-      } catch {
-        setError('复制失败，请检查权限');
+        const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+
+        const fileName = `bambu_history_${getTodayStr()}.${ext}`;
+        const text = await blob.text();
+
+        // 写入应用缓存目录
+        await Filesystem.writeFile({
+          path: fileName,
+          data: text,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+
+        // 获取文件 URI 用于分享
+        const fileUri = await Filesystem.getUri({
+          path: fileName,
+          directory: Directory.Cache,
+        });
+
+        // 调起系统分享
+        await Share.share({
+          title: 'Bambu 打印历史',
+          text: `导出 ${totalCount} 条记录`,
+          url: fileUri.uri,
+          dialogTitle: '分享导出文件',
+        });
+      } catch (shareErr) {
+        // Share 失败时降级为剪贴板
+        console.warn('Share failed, fallback to clipboard:', shareErr);
+        const text = await blob.text();
+        if (text.length > 180 * 1024) {
+          setError(`数据较大（${(text.length / 1024).toFixed(0)}KB），请通过电脑端导出`);
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          setError('数据已复制到剪贴板');
+          setTimeout(() => setError(''), 4000);
+        } catch {
+          setError('导出失败，请检查权限');
+        }
       }
       return;
     }
@@ -103,7 +133,7 @@ export default function Export() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, []);
+  }, [totalCount]);
 
   /** 执行导出 */
   const handleExport = useCallback(async () => {
@@ -357,18 +387,112 @@ function generateCSVNative(records: any[]): string {
   return [header, ...rows].join('\n');
 }
 
-/** 安卓端：转换为 HA 插件格式 */
+/** 安卓端：转换为 HA 插件格式（对齐 HA_FIELDS 完整字段） */
 function convertToHAFormatNative(records: any[]): any[] {
-  return records.map((item: Record<string, unknown>) => ({
-    task_name: item.designTitle ?? item.title ?? '',
-    status: typeof item.status === 'number' ? STATUS_MAP[item.status] ?? String(item.status) : String(item.status),
-    printer_serial: item.deviceId ?? '',
-    start_time: item.startTime ?? '',
-    end_time: item.endTime ?? '',
-    duration_hours: ((item.costTime as number) ?? 0) / 3600,
-    total_weight: item.weight ?? 0,
-    total_length: item.length ?? 0,
-    filament_type: item.filamentType ?? '',
-    filament_color: item.filamentColor ?? '',
-  }));
+  return records.map((item: Record<string, unknown>) => {
+    // 提取耗材信息
+    const filamentInfo = extractFilamentInfoForExport(item);
+    // 提取颜色列表
+    const colorsUsed = extractColorsForExport(item);
+    const typesUsed = extractTypesForExport(item);
+    // 提取喷嘴信息
+    const nozzleInfos = item.nozzleInfos as Array<{ diameter: number; type: string }> | undefined;
+    const nozzleSize = (Array.isArray(nozzleInfos) && nozzleInfos.length > 0)
+      ? String(nozzleInfos[0].diameter)
+      : (item.nozzleSize ? String(item.nozzleSize) : '0.4');
+    const nozzleType = (Array.isArray(nozzleInfos) && nozzleInfos.length > 0)
+      ? nozzleInfos[0].type || 'hardened_steel'
+      : 'hardened_steel';
+    // 计算重量
+    let totalWeight = 0;
+    if (item.filament && typeof item.filament === 'object') {
+      for (const fil of Object.values(item.filament as Record<string, { weight: number }>)) {
+        totalWeight += Number(fil?.weight ?? 0) || 0;
+      }
+    }
+    if (totalWeight === 0) totalWeight = Number(item.weight ?? 0) || 0;
+
+    const costSeconds = Number(item.costTime ?? 0) || 0;
+
+    return {
+      task_name: item.designTitle ?? item.title ?? '',
+      status: typeof item.status === 'number' ? STATUS_MAP[item.status] ?? String(item.status) : String(item.status),
+      design_id: item.designId ?? '',
+      printer_serial: item.deviceId ?? '',
+      start_time: item.startTime ?? '',
+      end_time: item.endTime ?? '',
+      duration_hours: Math.round(costSeconds / 36) / 100,
+      prepare_time_minutes: 0,
+      filament_type: filamentInfo.type,
+      filament_color: filamentInfo.color,
+      total_weight: Math.round(totalWeight * 10) / 10,
+      total_length: Number(item.length ?? 0) || 0,
+      colors_used: colorsUsed.join(';'),
+      types_used: typesUsed.join(';'),
+      total_colors: colorsUsed.length,
+      multi_color: colorsUsed.length > 1,
+      over_500g: totalWeight > 500,
+      color_usage: buildColorUsage(item),
+      energy_kwh: 0,
+      nozzle_type: nozzleType,
+      nozzle_size: nozzleSize,
+      print_bed_type: item.bedType ?? '',
+      speed_profile: '',
+      slice_mode: item.mode ?? '',
+      ams_used: (item.amsDetailMapping as unknown[])?.length ?? 0,
+      total_layer_count: item.totalLayerCount ?? 0,
+      progress: Number(item.progress ?? 0) || 0,
+      cover_image_url: item.coverImageUrl ?? '',
+    };
+  });
+}
+
+/** 导出用：提取耗材类型和颜色 */
+function extractFilamentInfoForExport(item: Record<string, unknown>): { type: string; color: string } {
+  let filamentType = '', filamentColor = '';
+  const amsList = item.amsDetailMapping as Array<{ filamentType: string; sourceColor: string }> | undefined;
+  if (Array.isArray(amsList) && amsList.length > 0) {
+    filamentType = amsList[0].filamentType ?? '';
+    filamentColor = amsList[0].sourceColor ?? '';
+  }
+  if (!filamentType && item.filament && typeof item.filament === 'object') {
+    for (const fil of Object.values(item.filament as Record<string, { type: string; color: string }>)) {
+      if (!filamentType) filamentType = fil.type ?? '';
+      if (!filamentColor) filamentColor = fil.color ?? '';
+    }
+  }
+  if (!filamentType) filamentType = String(item.filamentType ?? '');
+  if (!filamentColor) filamentColor = String(item.filamentColor ?? '');
+  return { type: filamentType, color: filamentColor };
+}
+
+/** 导出用：提取颜色列表 */
+function extractColorsForExport(item: Record<string, unknown>): string[] {
+  const colors: string[] = [];
+  const amsList = item.amsDetailMapping as Array<{ sourceColor: string }> | undefined;
+  if (Array.isArray(amsList)) {
+    for (const ams of amsList) {
+      if (ams.sourceColor && !colors.includes(ams.sourceColor)) colors.push(ams.sourceColor);
+    }
+  }
+  return colors;
+}
+
+/** 导出用：提取耗材类型列表 */
+function extractTypesForExport(item: Record<string, unknown>): string[] {
+  const types: string[] = [];
+  const amsList = item.amsDetailMapping as Array<{ filamentType: string }> | undefined;
+  if (Array.isArray(amsList)) {
+    for (const ams of amsList) {
+      if (ams.filamentType && !types.includes(ams.filamentType)) types.push(ams.filamentType);
+    }
+  }
+  return types;
+}
+
+/** 导出用：构建颜色用量字符串 */
+function buildColorUsage(item: Record<string, unknown>): string {
+  const amsList = item.amsDetailMapping as Array<{ sourceColor: string; weight: number }> | undefined;
+  if (!Array.isArray(amsList) || amsList.length === 0) return '';
+  return amsList.map(ams => `${ams.sourceColor || '?'}:${Math.round(ams.weight ?? 0)}g`).join(';');
 }
