@@ -1,4 +1,4 @@
-﻿﻿﻿import { useState, useEffect, useCallback } from 'react';
+﻿﻿﻿﻿import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   DownloadCloud,
@@ -12,8 +12,6 @@ import {
 import StatusBadge from '@/components/StatusBadge';
 import { formatDateTime, formatDuration, formatWeight, rgbaToHex } from '@/utils/format';
 import { cn } from '@/lib/utils';
-import { isNative } from '@/utils/platform';
-import * as nativeApi from '@/utils/native-api';
 
 // ---------------------------------------------------------------------------
 // 类型定义 — 对齐后端 BambuHistoryItem
@@ -334,24 +332,6 @@ export default function History() {
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      if (isNative()) {
-        // 安卓端：从本地缓存分页
-        const records = nativeApi.nativeGetCachedHistory();
-        const total = records.length;
-        const start = (page - 1) * pageSize;
-        const pagedRecords = records.slice(start, start + pageSize);
-        setRecords(pagedRecords);
-        setTotal(total);
-        // 从全部记录中提取设备名（不能只看当前页）
-        const deviceSet = new Set<string>();
-        for (const r of records) {
-          if ((r as Record<string, unknown>).deviceName) deviceSet.add((r as Record<string, unknown>).deviceName as string);
-        }
-        setDevices(Array.from(deviceSet).sort());
-        return;
-      }
-
-      // Web 端：走后端 API
       const params = new URLSearchParams({
         page: String(page),
         pageSize: String(pageSize),
@@ -395,17 +375,6 @@ export default function History() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      if (isNative()) {
-        const result = await nativeApi.nativeFetchHistory();
-        if (result.success) {
-          showToast(`刷新完成，共 ${result.data?.length ?? 0} 条`, 'ok');
-        } else {
-          showToast(result.error ?? '刷新失败', 'err');
-        }
-        fetchHistory();
-        return;
-      }
-
       const res = await fetch('/api/history/refresh', { method: 'POST' });
       const json = (await res.json()) as ActionResponse;
       if (json.success) {
@@ -427,17 +396,6 @@ export default function History() {
   const handleFullDownload = async () => {
     setDownloading(true);
     try {
-      if (isNative()) {
-        const result = await nativeApi.nativeFetchHistory();
-        if (result.success) {
-          showToast(`全量下载完成，共 ${result.data?.length ?? 0} 条`, 'ok');
-          fetchHistory();
-        } else {
-          showToast(result.error ?? '全量下载失败', 'err');
-        }
-        return;
-      }
-
       const res = await fetch('/api/history/full-download', { method: 'POST' });
       const json = (await res.json()) as ActionResponse;
       if (json.success) {
@@ -469,16 +427,6 @@ export default function History() {
     setter(v);
     setPage(1);
   };
-
-  /** 重置所有筛选条件 */
-  const handleResetFilters = useCallback(() => {
-    setStatusFilter('');
-    setDeviceFilter('');
-    setDateFrom('');
-    setDateTo('');
-    setSearch('');
-    setPage(1);
-  }, []);
 
   // ---- 公共 select 样式 ----
   const selectCls =
@@ -568,20 +516,6 @@ export default function History() {
             className={cn(selectCls, 'w-[180px] pl-8')}
           />
         </div>
-
-        {/* 确定和重置按钮 */}
-        <button
-          onClick={() => fetchHistory()}
-          className="flex items-center gap-1 rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:opacity-90"
-        >
-          确定
-        </button>
-        <button
-          onClick={handleResetFilters}
-          className="flex items-center gap-1 rounded-md border border-[var(--border)] bg-transparent px-3 py-1.5 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-        >
-          重置
-        </button>
       </div>
 
       {/* ===== 记录表格 ===== */}
