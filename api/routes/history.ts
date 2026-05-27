@@ -1,4 +1,4 @@
-﻿﻿﻿﻿/**
+﻿﻿﻿/**
  * 历史数据路由
  * 分页获取、统计、增量更新、全量下载
  */
@@ -123,7 +123,13 @@ router.get('/', (_req: Request, res: Response): void => {
   const pageSize = Number(_req.query.pageSize) || 20
   const result = paginate(filtered, page, pageSize)
 
-  res.json({ success: true, data: result })
+  // 提取全部设备列表（从完整历史中，非筛选后）
+  const deviceSet = new Set<string>()
+  for (const item of history) {
+    if (item.deviceName) deviceSet.add(item.deviceName)
+  }
+
+  res.json({ success: true, data: result, devices: Array.from(deviceSet).sort() })
 })
 
 /**
