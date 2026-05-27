@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿﻿﻿import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   DownloadCloud,
@@ -342,11 +342,12 @@ export default function History() {
         const pagedRecords = records.slice(start, start + pageSize);
         setRecords(pagedRecords);
         setTotal(total);
+        // 从全部记录中提取设备名（不能只看当前页）
         const deviceSet = new Set<string>();
-        for (const r of pagedRecords) {
+        for (const r of records) {
           if ((r as Record<string, unknown>).deviceName) deviceSet.add((r as Record<string, unknown>).deviceName as string);
         }
-        setDevices((prev) => { const merged = new Set([...prev, ...deviceSet]); return Array.from(merged).sort(); });
+        setDevices(Array.from(deviceSet).sort());
         return;
       }
 
@@ -469,6 +470,16 @@ export default function History() {
     setPage(1);
   };
 
+  /** 重置所有筛选条件 */
+  const handleResetFilters = useCallback(() => {
+    setStatusFilter('');
+    setDeviceFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setSearch('');
+    setPage(1);
+  }, []);
+
   // ---- 公共 select 样式 ----
   const selectCls =
     'rounded-md border border-[var(--border)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-[var(--accent)]';
@@ -557,6 +568,20 @@ export default function History() {
             className={cn(selectCls, 'w-[180px] pl-8')}
           />
         </div>
+
+        {/* 确定和重置按钮 */}
+        <button
+          onClick={() => fetchHistory()}
+          className="flex items-center gap-1 rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+        >
+          确定
+        </button>
+        <button
+          onClick={handleResetFilters}
+          className="flex items-center gap-1 rounded-md border border-[var(--border)] bg-transparent px-3 py-1.5 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        >
+          重置
+        </button>
       </div>
 
       {/* ===== 记录表格 ===== */}
