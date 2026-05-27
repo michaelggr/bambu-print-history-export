@@ -6,7 +6,7 @@ import { api } from '@/utils/api';
 import { isNative, isElectron } from '@/utils/platform';
 
 /** 当前版本号 */
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.3.7';
 /** GitHub 仓库 */
 const GITHUB_REPO = 'michaelggr/bambu-print-history-export';
 /** QQ 交流群链接 */
