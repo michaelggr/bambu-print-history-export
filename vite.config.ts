@@ -1,11 +1,13 @@
-import { defineConfig } from 'vitest/config'
+﻿import { defineConfig } from 'vitest/config'
+import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
 
 // 从 package.json 读取版本号，构建时注入
-const pkgVersion = require('./package.json').version;
+const pkgVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version;
 
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     tsconfigPaths(),
