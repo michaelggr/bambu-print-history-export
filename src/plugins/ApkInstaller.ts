@@ -1,4 +1,4 @@
-﻿/**
+/**
  * APK 安装器 — Capacitor 自定义插件
  * 用于下载 APK 文件并触发 Android 系统安装器
  *

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bambu打印历史导出</string>
+    <string name="title_activity_main">Bambu打印历史导出</string>
+    <string name="package_name">com.bambu.exporthistory</string>
+    <string name="custom_url_scheme">com.bambu.exporthistory</string>
+</resources>

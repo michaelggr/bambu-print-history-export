@@ -1,4 +1,4 @@
-﻿/** 检测是否运行在 Capacitor 原生平台（Android/iOS） */
+/** 检测是否运行在 Capacitor 原生平台（Android/iOS） */
 export const isNative = (): boolean => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.();

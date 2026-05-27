@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * 安卓/原生端统计计算 — 从 Bambu Cloud 原始记录计算完整统计数据
  * 逻辑对齐后端 api/services/bambu.ts 的 calculateStats()
  */

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 统一 API 调用入口（纯前端）
  * 所有平台（Web/Electron/Capacitor）统一通过此模块访问数据，
  * 不再依赖 Express 后端。
