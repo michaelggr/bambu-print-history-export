@@ -63,17 +63,17 @@ jobs:
         env:
           ELECTRON_CACHE: ~/.cache/electron
 
-      - name: Upload Windows zip
+      - name: Upload Windows installer (exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist-electron3/*.exe
+
+      - name: Upload Windows portable (zip)
         uses: actions/upload-artifact@v4
         with:
           name: windows-zip
           path: dist-electron3/*.zip
-
-      - name: Upload Windows exe
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe
-          path: dist-electron3/win-unpacked/**/*.exe
 
   # ── Android (Capacitor) 构建 ──
   build-android:
