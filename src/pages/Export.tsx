@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+﻿﻿﻿import { useState, useCallback, useEffect } from 'react';
 import { FileJson, FileSpreadsheet, Plug, Download, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAppStore from '@/store';
@@ -143,7 +143,18 @@ export default function Export() {
     try {
       if (isNative()) {
         // 安卓端：从本地缓存数据直接导出，不依赖后端
-        const records = nativeApi.nativeGetCachedHistory();
+        let records = nativeApi.nativeGetCachedHistory();
+
+        // 如果缓存为空，先拉取数据
+        if (records.length === 0) {
+          const fetchResult = await nativeApi.nativeFetchHistory();
+          if (!fetchResult.success) {
+            setError(fetchResult.error || '获取数据失败，请先登录并访问历史页面');
+            return;
+          }
+          records = nativeApi.nativeGetCachedHistory();
+        }
+
         let content: string;
         let ext: string;
 
