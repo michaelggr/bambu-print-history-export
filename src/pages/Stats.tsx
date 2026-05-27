@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Printer, TrendingUp, Package, Clock, Monitor, Palette,
   RefreshCw, Camera, CheckCircle2, Share2,

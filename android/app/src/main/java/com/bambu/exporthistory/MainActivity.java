@@ -1,4 +1,4 @@
-﻿package com.bambu.exporthistory;
+package com.bambu.exporthistory;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

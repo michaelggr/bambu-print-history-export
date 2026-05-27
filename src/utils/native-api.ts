@@ -1,4 +1,4 @@
-﻿import type { BambuHistoryItem } from '@/types/bambu';
+import type { BambuHistoryItem } from '@/types/bambu';
 
 type JsonObject = Record<string, unknown>;
 

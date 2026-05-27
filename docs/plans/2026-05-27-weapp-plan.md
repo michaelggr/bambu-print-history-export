@@ -1,4 +1,4 @@
-﻿﻿# 微信小程序版实施计划
+﻿# 微信小程序版实施计划
 
 > **For agentic workers:** 使用 subagent-driven-development 或 executing-plans 逐步执行。步骤使用 checkbox (`- [ ]`) 语法跟踪。
 
