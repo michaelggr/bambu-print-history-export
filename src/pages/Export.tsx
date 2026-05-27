@@ -1,9 +1,8 @@
-﻿﻿﻿﻿import { useState, useCallback, useEffect } from 'react';
+﻿﻿import { useState, useCallback, useEffect } from 'react';
 import { FileJson, FileSpreadsheet, Plug, Download, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import useAppStore from '@/store';
+import { api } from '@/utils/api';
 import { isNative } from '@/utils/platform';
-import * as nativeApi from '@/utils/native-api';
 
 /** 导出格式 */
 type ExportFormat = 'json' | 'csv' | 'ha';
@@ -32,12 +31,12 @@ const HA_FIELDS = [
   'cover_image_url',
 ];
 
-/** 状态筛选选项 */
+/** 状态筛选选项 — 对齐 Bambu 状态码：2=成功, 3=失败, 1/4=取消 */
 const STATUS_OPTIONS = [
   { value: '', label: '全部状态' },
-  { value: '1', label: '成功' },
-  { value: '0', label: '失败' },
-  { value: '2', label: '取消' },
+  { value: '2', label: '成功' },
+  { value: '3', label: '失败' },
+  { value: '1,4', label: '取消' },
 ];
 
 /** 获取今日日期字符串（用于文件名） */
@@ -48,8 +47,6 @@ function getTodayStr(): string {
 }
 
 export default function Export() {
-  const token = useAppStore((s) => s.token);
-
   const [format, setFormat] = useState<ExportFormat>('json');
   const [status, setStatus] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -58,38 +55,62 @@ export default function Export() {
   const [error, setError] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
-  // 从 API 获取总记录数
+  // 获取总记录数
   useEffect(() => {
-    if (isNative()) {
-      const records = nativeApi.nativeGetCachedHistory();
-      setTotalCount(records.length);
-      return;
-    }
-    fetch('/api/history?page=1&pageSize=1')
-      .then((r) => r.json())
+    api.getHistory(1, 1)
       .then((json) => {
         if (json.success && json.data) setTotalCount(json.data.total ?? 0);
       })
       .catch(() => {});
   }, []);
 
-  /** 触发下载（Web 用 <a>，安卓端用剪贴板+提示） */
+  /** 触发下载（Web 用 <a>，安卓端用 Filesystem+Share） */
   const triggerDownload = useCallback(async (blob: Blob, ext: string) => {
     if (isNative()) {
-      // 安卓端 WebView 不支持 <a download>，降级为剪贴板
-      const text = await blob.text();
-      if (text.length > 180 * 1024) {
-        setError(`数据较大（${(text.length / 1024).toFixed(0)}KB），建议通过"全量下载"刷新后用数据线导出`);
-        return;
-      }
+      // 安卓端：使用 Capacitor Filesystem 写文件 + Share 分享
       try {
-        await navigator.clipboard.writeText(text);
-        const msg = ext === 'csv' ? 'CSV 数据已复制到剪贴板，请粘贴到文件中' : 'JSON 数据已复制到剪贴板';
-        // 用 toast 替代 alert
-        setError(msg);
-        setTimeout(() => setError(''), 4000);
-      } catch {
-        setError('复制失败，请检查权限');
+        const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+
+        const fileName = `bambu_history_${getTodayStr()}.${ext}`;
+        const text = await blob.text();
+
+        // 写入应用缓存目录
+        await Filesystem.writeFile({
+          path: fileName,
+          data: text,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+
+        // 获取文件 URI 用于分享
+        const fileUri = await Filesystem.getUri({
+          path: fileName,
+          directory: Directory.Cache,
+        });
+
+        // 调起系统分享
+        await Share.share({
+          title: 'Bambu 打印历史',
+          text: `导出 ${totalCount} 条记录`,
+          url: fileUri.uri,
+          dialogTitle: '分享导出文件',
+        });
+      } catch (shareErr) {
+        // Share 失败时降级为剪贴板
+        console.warn('Share failed, fallback to clipboard:', shareErr);
+        const text = await blob.text();
+        if (text.length > 180 * 1024) {
+          setError(`数据较大（${(text.length / 1024).toFixed(0)}KB），请通过电脑端导出`);
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          setError('数据已复制到剪贴板');
+          setTimeout(() => setError(''), 4000);
+        } catch {
+          setError('导出失败，请检查权限');
+        }
       }
       return;
     }
@@ -103,7 +124,7 @@ export default function Export() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, []);
+  }, [totalCount]);
 
   /** 执行导出 */
   const handleExport = useCallback(async () => {
@@ -111,59 +132,46 @@ export default function Export() {
     setExporting(true);
 
     try {
-      if (isNative()) {
-        // 安卓端：从本地缓存数据直接导出，不依赖后端
-        const records = nativeApi.nativeGetCachedHistory();
-        let content: string;
-        let ext: string;
-
-        if (format === 'json') {
-          content = JSON.stringify(records, null, 2);
-          ext = 'json';
-        } else if (format === 'csv') {
-          content = generateCSVNative(records);
-          ext = 'csv';
-        } else {
-          content = JSON.stringify(convertToHAFormatNative(records), null, 2);
-          ext = 'json';
-        }
-
-        const blob = new Blob([content], { type: 'application/json' });
-        triggerDownload(blob, ext);
-        return;
-      }
-
-      // Web 端：走后端 API
+      // 构建筛选参数
       const filters: Record<string, string> = {};
       if (status) filters.status = status;
       if (dateFrom) filters.dateFrom = dateFrom;
       if (dateTo) filters.dateTo = dateTo;
 
-      const res = await fetch('/api/export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ format, filters }),
-      });
+      // 调用统一 API 获取导出数据
+      const result = await api.exportData(format, filters);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setError(data?.error || `导出失败 (${res.status})`);
+      if (!result.success) {
+        setError(result.error ?? '导出失败');
         return;
       }
 
-      // 根据格式确定扩展名
+      // 根据格式生成 Blob 并触发下载
       const ext = format === 'csv' ? 'csv' : 'json';
-      const blob = await res.blob();
+      let content: string;
+
+      if (format === 'csv') {
+        // CSV 格式：data 是含 BOM 头的 CSV 字符串
+        content = result.data as string;
+      } else if (format === 'ha') {
+        // HA 格式：data 是 HAFormat 对象
+        content = JSON.stringify(result.data, null, 2);
+      } else {
+        // JSON 格式：data 是原始记录数组
+        content = JSON.stringify(result.data, null, 2);
+      }
+
+      const mimeType = format === 'csv'
+        ? 'text/csv;charset=utf-8'
+        : 'application/json';
+      const blob = new Blob([content], { type: mimeType });
       triggerDownload(blob, ext);
     } catch {
       setError('网络错误，请重试');
     } finally {
       setExporting(false);
     }
-  }, [format, status, dateFrom, dateTo, token, triggerDownload]);
+  }, [format, status, dateFrom, dateTo, triggerDownload]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -325,50 +333,4 @@ export default function Export() {
       </button>
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// 安卓端本地导出辅助函数（不依赖后端）
-// ---------------------------------------------------------------------------
-
-/** 状态码 → 中文 */
-const STATUS_MAP: Record<number, string> = { 1: '打印中', 2: '成功', 3: '失败', 4: '已取消' };
-
-/** 安卓端：生成 CSV（与后端 export.ts 逻辑一致） */
-function generateCSVNative(records: any[]): string {
-  const columns = ['id', 'designTitle', 'status', 'deviceName', 'deviceModel', 'startTime', 'endTime', 'weight', 'length', 'costTime', 'filamentType', 'mode', 'bedType'];
-  const header = columns.join(',');
-  const rows = records.map((item: Record<string, unknown>) => {
-    return columns.map((col) => {
-      let val: unknown;
-      if (col === 'status') {
-        val = typeof item[col] === 'number' ? (STATUS_MAP[item[col] as number] ?? String(item[col])) : String(item[col]);
-      } else if (col === 'filamentType') {
-        const ams = item.amsDetailMapping as Array<{ filamentType: string }> | undefined;
-        val = (Array.isArray(ams) && ams.length > 0) ? ams[0].filamentType : (item.filamentType ?? '');
-      } else {
-        val = (item as Record<string, unknown>)[col] ?? '';
-      }
-      const str = String(val);
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str.replace(/"/g, '""')}"`;
-      return str;
-    }).join(',');
-  });
-  return [header, ...rows].join('\n');
-}
-
-/** 安卓端：转换为 HA 插件格式 */
-function convertToHAFormatNative(records: any[]): any[] {
-  return records.map((item: Record<string, unknown>) => ({
-    task_name: item.designTitle ?? item.title ?? '',
-    status: typeof item.status === 'number' ? STATUS_MAP[item.status] ?? String(item.status) : String(item.status),
-    printer_serial: item.deviceId ?? '',
-    start_time: item.startTime ?? '',
-    end_time: item.endTime ?? '',
-    duration_hours: ((item.costTime as number) ?? 0) / 3600,
-    total_weight: item.weight ?? 0,
-    total_length: item.length ?? 0,
-    filament_type: item.filamentType ?? '',
-    filament_color: item.filamentColor ?? '',
-  }));
 }

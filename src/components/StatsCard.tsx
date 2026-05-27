@@ -23,8 +23,8 @@ export default function StatsCard({ icon, value, label, className }: StatsCardPr
         {icon}
       </div>
       {/* 数值 + 标签 */}
-      <div className="min-w-0">
-        <p className="truncate font-mono-heading text-xl font-bold text-[var(--text-primary)]">
+      <div className="min-w-0 flex-1">
+        <p className="font-mono-heading text-xl font-bold text-[var(--text-primary)] break-words">
           {value}
         </p>
         <p className="text-sm text-[var(--text-secondary)]">{label}</p>

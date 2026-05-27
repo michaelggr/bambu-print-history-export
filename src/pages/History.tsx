@@ -1,74 +1,26 @@
-﻿﻿﻿﻿import { useState, useEffect, useCallback } from 'react';
+﻿﻿import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   DownloadCloud,
   Search,
   ChevronLeft,
   ChevronRight,
-  X,
-  Box,
   Loader2,
 } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
-import { formatDateTime, formatDuration, formatWeight, rgbaToHex } from '@/utils/format';
+import CoverImage from '@/components/CoverImage';
+import DetailModal from '@/components/DetailModal';
+import { formatDateTime, formatDuration, formatWeight } from '@/utils/format';
+import { extractFilamentInfo } from '@/utils/history-helpers';
 import { cn } from '@/lib/utils';
-import { isNative } from '@/utils/platform';
-import * as nativeApi from '@/utils/native-api';
+import { api } from '@/utils/api';
+import type { BambuHistoryItem } from '@/types/bambu';
 
 // ---------------------------------------------------------------------------
-// 类型定义 — 对齐后端 BambuHistoryItem
+// 类型定义
 // ---------------------------------------------------------------------------
 
-interface AmsDetail {
-  filamentType: string;
-  sourceColor: string;
-  weight: number;
-  length: number;
-}
-
-interface HistoryRecord {
-  id: string;
-  designId?: number | string;
-  designTitle?: string;
-  title?: string;
-  status: number;
-  deviceName?: string;
-  deviceModel?: string;
-  deviceId?: string;
-  startTime?: string;
-  endTime?: string;
-  costTime?: number;
-  weight?: number;
-  length?: number;
-  cover?: string;
-  snapShot?: string;
-  filamentType?: string;
-  filamentColor?: string;
-  amsDetailMapping?: AmsDetail[];
-  mode?: string;
-  bedType?: string;
-  useAms?: boolean;
-  nozzleSize?: string | number;
-  nozzleInfos?: Array<{ diameter: number; type: string }>;
-  progress?: number;
-}
-
-interface HistoryResponse {
-  success: boolean;
-  data: {
-    data: HistoryRecord[];
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  };
-}
-
-interface ActionResponse {
-  success: boolean;
-  data?: { added?: number; total?: number; message?: string };
-  error?: string;
-}
+type HistoryRecord = BambuHistoryItem;
 
 // ---------------------------------------------------------------------------
 // 常量
@@ -82,218 +34,6 @@ const STATUS_OPTIONS = [
 ];
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
-
-// ---------------------------------------------------------------------------
-// 辅助函数
-// ---------------------------------------------------------------------------
-
-/** 提取耗材信息（取第一个 AMS 耗材） */
-function extractFilamentInfo(record: HistoryRecord): { type: string; color: string } {
-  const amsList = record.amsDetailMapping;
-  if (Array.isArray(amsList) && amsList.length > 0) {
-    const first = amsList[0];
-    return {
-      type: first?.filamentType ?? record.filamentType ?? '',
-      color: first?.sourceColor ? rgbaToHex(first.sourceColor) : (record.filamentColor ? rgbaToHex(record.filamentColor) : ''),
-    };
-  }
-  return {
-    type: record.filamentType ?? '',
-    color: record.filamentColor ? rgbaToHex(record.filamentColor) : '',
-  };
-}
-
-/** 格式化长度（mm → m） */
-function formatLength(mm: number): string {
-  if (!mm || mm <= 0) return '-';
-  const m = mm / 1000;
-  return `${m.toFixed(1)}m`;
-}
-
-/** 切片模式映射 */
-function sliceModeLabel(mode?: string): string {
-  if (!mode) return '-';
-  if (mode === 'cloud_slice') return '云端';
-  if (mode === 'local') return '本地';
-  return mode;
-}
-
-// ---------------------------------------------------------------------------
-// 组件：封面缩略图
-// ---------------------------------------------------------------------------
-
-function CoverImage({ src, alt, size = 40 }: { src?: string; alt: string; size?: number }) {
-  const [error, setError] = useState(false);
-  if (!src || error) {
-    return (
-      <div
-        className="flex items-center justify-center rounded bg-[var(--bg-tertiary)]"
-        style={{ width: size, height: size }}
-      >
-        <Box size={size * 0.45} className="text-[var(--text-muted)]" />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className="rounded object-cover"
-      style={{ width: size, height: size }}
-      onError={() => setError(true)}
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 组件：详情弹窗
-// ---------------------------------------------------------------------------
-
-function DetailModal({
-  record,
-  onClose,
-}: {
-  record: HistoryRecord;
-  onClose: () => void;
-}) {
-  const [snapError, setSnapError] = useState(false);
-  const title = record.designTitle ?? record.title ?? '未命名';
-
-  // 提取字段
-  const filament = extractFilamentInfo(record);
-  const nozzleSize = record.nozzleSize ? `${record.nozzleSize}mm`
-    : (Array.isArray(record.nozzleInfos) && record.nozzleInfos.length > 0 && record.nozzleInfos[0].diameter
-      ? `${record.nozzleInfos[0].diameter}mm` : '-');
-  const nozzleType = Array.isArray(record.nozzleInfos) && record.nozzleInfos.length > 0
-    ? (record.nozzleInfos[0].type || '-') : '-';
-  const bedType = record.bedType ?? '-';
-  const sliceMode = sliceModeLabel(record.mode);
-  const useAms = record.useAms ? '是' : '否';
-  const serial = record.deviceId ?? '-';
-
-  // 模型链接 — 使用 designId
-  const modelUrl = record.designId
-    ? `https://makerworld.com.cn/zh/models/${record.designId}`
-    : '';
-
-  // 计算总重量和长度
-  let totalWeight = 0;
-  let totalLength = 0;
-  if (Array.isArray(record.amsDetailMapping)) {
-    for (const ams of record.amsDetailMapping) {
-      totalWeight += Number(ams.weight ?? 0) || 0;
-      totalLength += Number(ams.length ?? 0) || 0;
-    }
-  }
-  if (totalWeight === 0) totalWeight = Number(record.weight ?? 0) || 0;
-  if (totalLength === 0) totalLength = Number(record.length ?? 0) || 0;
-
-  /** 字段行 */
-  function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-      <div className="flex gap-3 py-1.5">
-        <span className="w-24 shrink-0 text-sm text-[var(--text-secondary)]">{label}</span>
-        <span className="text-sm text-[var(--text-primary)]">{children}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      {/* 遮罩 */}
-      <div className="absolute inset-0 bg-black/60" />
-
-      {/* 弹窗主体 */}
-      <div
-        className="relative z-10 w-full max-w-2xl rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 顶部标题 + 关闭 */}
-        <div className="mb-4 flex items-start justify-between">
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* 图片 + 字段 */}
-        <div className="flex gap-6">
-          {/* 左侧图片 */}
-          <div className="flex shrink-0 flex-col gap-3">
-            <CoverImage src={record.cover} alt={title} size={200} />
-            {record.snapShot && !snapError && (
-              <img
-                src={record.snapShot}
-                alt="快照"
-                className="max-w-[200px] rounded object-contain"
-                onError={() => setSnapError(true)}
-              />
-            )}
-          </div>
-
-          {/* 右侧字段 */}
-          <div className="flex-1">
-            <FieldRow label="任务名称">{title}</FieldRow>
-            <FieldRow label="状态"><StatusBadge status={record.status} /></FieldRow>
-            <FieldRow label="设备">
-              {record.deviceName ?? '-'}
-              {record.deviceModel ? ` (${record.deviceModel})` : ''}
-            </FieldRow>
-            <FieldRow label="开始时间">{formatDateTime(record.startTime ?? '')}</FieldRow>
-            <FieldRow label="结束时间">{formatDateTime(record.endTime ?? '')}</FieldRow>
-            <FieldRow label="打印时长">{formatDuration(record.costTime ?? 0)}</FieldRow>
-            <FieldRow label="耗材重量">{formatWeight(totalWeight)}</FieldRow>
-            <FieldRow label="耗材长度">{formatLength(totalLength)}</FieldRow>
-            <FieldRow label="喷嘴直径">{nozzleSize}</FieldRow>
-            <FieldRow label="热床类型">{bedType}</FieldRow>
-            <FieldRow label="切片模式">{sliceMode}</FieldRow>
-            <FieldRow label="使用AMS">{useAms}</FieldRow>
-            <FieldRow label="设备序列号">{serial}</FieldRow>
-            <FieldRow label="多色打印">
-              {Array.isArray(record.amsDetailMapping) && record.amsDetailMapping.length > 1 ? '是' : '否'}
-            </FieldRow>
-            {modelUrl && (
-              <FieldRow label="模型链接">
-                <a
-                  href={modelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#4FC3F7] underline"
-                >
-                  {modelUrl}
-                </a>
-              </FieldRow>
-            )}
-
-            {/* AMS 耗材详情 */}
-            {Array.isArray(record.amsDetailMapping) && record.amsDetailMapping.length > 0 && (
-              <>
-                <div className="mt-3 border-t border-[var(--border)] pt-3">
-                  <span className="text-sm font-medium text-[var(--text-secondary)]">AMS 耗材详情</span>
-                </div>
-                {record.amsDetailMapping.map((ams, i) => (
-                  <div key={i} className="flex items-center gap-2 py-1 text-sm">
-                    <span className="text-[var(--text-secondary)]">AMS#{i + 1}:</span>
-                    <span className="text-[var(--text-primary)]">{ams.filamentType}</span>
-                    <span
-                      className="inline-block h-3 w-3 rounded-full border border-white/20"
-                      style={{ backgroundColor: rgbaToHex(ams.sourceColor) }}
-                    />
-                    <span className="text-[var(--text-primary)]">{formatWeight(ams.weight)}</span>
-                    <span className="text-[var(--text-primary)]">{formatLength(ams.length)}</span>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // 主页面
@@ -334,50 +74,24 @@ export default function History() {
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      if (isNative()) {
-        // 安卓端：从本地缓存分页
-        const records = nativeApi.nativeGetCachedHistory();
-        const total = records.length;
-        const start = (page - 1) * pageSize;
-        const pagedRecords = records.slice(start, start + pageSize);
-        setRecords(pagedRecords);
-        setTotal(total);
-        const deviceSet = new Set<string>();
-        for (const r of pagedRecords) {
-          if ((r as Record<string, unknown>).deviceName) deviceSet.add((r as Record<string, unknown>).deviceName as string);
-        }
-        setDevices((prev) => { const merged = new Set([...prev, ...deviceSet]); return Array.from(merged).sort(); });
-        return;
-      }
+      // 构建筛选参数
+      const filters: Record<string, string> = {};
+      if (statusFilter) filters.status = statusFilter;
+      if (deviceFilter) filters.device = deviceFilter;
+      if (dateFrom) filters.dateFrom = dateFrom;
+      if (dateTo) filters.dateTo = dateTo;
+      if (search) filters.search = search;
 
-      // Web 端：走后端 API
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
-      });
-      if (statusFilter) params.set('status', statusFilter);
-      if (deviceFilter) params.set('device', deviceFilter);
-      if (dateFrom) params.set('dateFrom', dateFrom);
-      if (dateTo) params.set('dateTo', dateTo);
-      if (search) params.set('search', search);
-
-      const res = await fetch(`/api/history?${params}`);
-      const json = (await res.json()) as HistoryResponse;
+      const json = await api.getHistory(page, pageSize, filters);
 
       if (json.success && json.data) {
-        setRecords(json.data.data ?? []);
+        setRecords(json.data.data as HistoryRecord[] ?? []);
         setTotal(json.data.total ?? 0);
+      }
 
-        // 从记录中提取设备列表
-        const deviceSet = new Set<string>();
-        for (const r of json.data.data ?? []) {
-          if (r.deviceName) deviceSet.add(r.deviceName);
-        }
-        // 合并已有设备列表（避免翻页后丢失）
-        setDevices((prev) => {
-          const merged = new Set([...prev, ...deviceSet]);
-          return Array.from(merged).sort();
-        });
+      // 更新设备列表
+      if (json.devices) {
+        setDevices(json.devices);
       }
     } catch {
       showToast('获取历史记录失败', 'err');
@@ -390,27 +104,40 @@ export default function History() {
     fetchHistory();
   }, [fetchHistory]);
 
+  // 首次加载时，如果缓存为空，自动触发全量下载
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
+  useEffect(() => {
+    if (initialFetchDone) return;
+    setInitialFetchDone(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        // 检查缓存是否为空
+        const checkResult = await api.getHistory(1, 1);
+        if (checkResult.success && checkResult.data && checkResult.data.total === 0) {
+          // 自动触发全量下载
+          const dlResult = await api.fullDownload();
+          if (dlResult.success) {
+            showToast(`首次下载完成，共 ${dlResult.data?.total ?? 0} 条`, 'ok');
+            fetchHistory();
+          }
+        }
+      } catch { /* 静默失败 */ }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ---- 增量更新 ----
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      if (isNative()) {
-        const result = await nativeApi.nativeFetchHistory();
-        if (result.success) {
-          showToast(`刷新完成，共 ${result.data?.length ?? 0} 条`, 'ok');
-        } else {
-          showToast(result.error ?? '刷新失败', 'err');
-        }
-        fetchHistory();
-        return;
-      }
-
-      const res = await fetch('/api/history/refresh', { method: 'POST' });
-      const json = (await res.json()) as ActionResponse;
+      const json = await api.refreshHistory();
       if (json.success) {
         const added = json.data?.added ?? 0;
         const totalMsg = json.data?.total ?? '';
-        showToast(added > 0 ? `新增 ${added} 条记录，共 ${totalMsg} 条` : (json.data?.message ?? '没有新记录'), 'ok');
+        showToast(added > 0 ? `新增 ${added} 条记录，共 ${totalMsg} 条` : '没有新记录', 'ok');
         fetchHistory();
       } else {
         showToast(json.error ?? '增量更新失败', 'err');
@@ -426,19 +153,7 @@ export default function History() {
   const handleFullDownload = async () => {
     setDownloading(true);
     try {
-      if (isNative()) {
-        const result = await nativeApi.nativeFetchHistory();
-        if (result.success) {
-          showToast(`全量下载完成，共 ${result.data?.length ?? 0} 条`, 'ok');
-          fetchHistory();
-        } else {
-          showToast(result.error ?? '全量下载失败', 'err');
-        }
-        return;
-      }
-
-      const res = await fetch('/api/history/full-download', { method: 'POST' });
-      const json = (await res.json()) as ActionResponse;
+      const json = await api.fullDownload();
       if (json.success) {
         showToast(`全量下载完成，共 ${json.data?.total ?? 0} 条`, 'ok');
         fetchHistory();
@@ -468,6 +183,16 @@ export default function History() {
     setter(v);
     setPage(1);
   };
+
+  /** 重置所有筛选条件 */
+  const handleResetFilters = useCallback(() => {
+    setStatusFilter('');
+    setDeviceFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setSearch('');
+    setPage(1);
+  }, []);
 
   // ---- 公共 select 样式 ----
   const selectCls =
@@ -557,6 +282,20 @@ export default function History() {
             className={cn(selectCls, 'w-[180px] pl-8')}
           />
         </div>
+
+        {/* 确定和重置按钮 */}
+        <button
+          onClick={() => fetchHistory()}
+          className="flex items-center gap-1 rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+        >
+          确定
+        </button>
+        <button
+          onClick={handleResetFilters}
+          className="flex items-center gap-1 rounded-md border border-[var(--border)] bg-transparent px-3 py-1.5 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        >
+          重置
+        </button>
       </div>
 
       {/* ===== 记录表格 ===== */}

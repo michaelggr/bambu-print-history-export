@@ -7,18 +7,6 @@ import Settings from '@/pages/Settings';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-/** 占位页面 — 后续替换为实际页面组件 */
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div>
-      <h1 className="font-mono-heading text-2xl font-bold text-[var(--text-primary)]">
-        {title}
-      </h1>
-      <p className="mt-2 text-[var(--text-secondary)]">开发中...</p>
-    </div>
-  );
-}
-
 export default function App() {
   return (
     <Router>

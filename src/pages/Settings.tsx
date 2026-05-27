@@ -3,18 +3,49 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Trash2, Info, ExternalLink, Loader2, RefreshCw, Download, MessageCircle } from 'lucide-react';
 import useAppStore from '@/store';
 import { api } from '@/utils/api';
+import { isNative, isElectron } from '@/utils/platform';
+import ApkInstaller from '@/plugins/ApkInstaller';
 
-/** 当前版本号 */
-const APP_VERSION = '2.2.0';
+/** 当前版本号（构建时从 package.json 注入） */
+const APP_VERSION = __APP_VERSION__;
 /** GitHub 仓库 */
 const GITHUB_REPO = 'michaelggr/bambu-print-history-export';
-/** QQ 交流群链接 */
-const QQ_GROUP_URL = 'https://qm.qq.com/q/9paJFuZbCE';
 
 /** 设置项类型 */
 interface SettingsData {
   cacheCount: number;
 }
+
+/** 更新信息 */
+interface UpdateInfo {
+  hasUpdate: boolean;
+  latest: string;
+  notes: string;
+  downloadUrl: string;
+  apkUrl: string;
+}
+
+// ---------------------------------------------------------------------------
+// 语义化版本比较
+// ---------------------------------------------------------------------------
+
+/** 比较两个语义化版本号：a > b 返回 1，a < b 返回 -1，相等返回 0 */
+function compareSemver(a: string, b: string): number {
+  const pa = a.replace(/^v/, '').split('.').map(Number);
+  const pb = b.replace(/^v/, '').split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// 组件
+// ---------------------------------------------------------------------------
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -22,18 +53,19 @@ export default function Settings() {
 
   const [settings, setSettings] = useState<SettingsData>({ cacheCount: 0 });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving] = useState(false);
   const [error, setError] = useState('');
   const [updateChecking, setUpdateChecking] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<{ hasUpdate: boolean; latest: string; notes: string; downloadUrl: string } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [installing, setInstalling] = useState(false);
 
   /** 获取设置 */
   const fetchSettings = useCallback(async () => {
     try {
       const json = await api.getSettings();
       if (json.success !== false) {
-        const d = json.data ?? json;
-        setSettings({ cacheCount: d.cacheCount ?? 0 });
+        const d = (json.data ?? json) as Record<string, unknown>;
+        setSettings({ cacheCount: (d.cacheCount as number) ?? 0 });
       }
     } catch {
       // 静默处理
@@ -82,7 +114,7 @@ export default function Settings() {
     navigate('/login', { replace: true });
   }, [clearAuth, navigate]);
 
-  /** 检查更新 */
+  /** 检查更新（语义化版本比较） */
   const handleCheckUpdate = useCallback(async () => {
     setUpdateChecking(true);
     setUpdateInfo(null);
@@ -91,17 +123,86 @@ export default function Settings() {
       if (!res.ok) throw new Error('无法获取版本信息');
       const data = await res.json();
       const latest = data.tag_name?.replace(/^v/, '') || '';
-      const hasUpdate = latest && latest !== APP_VERSION && latest > APP_VERSION;
+
+      // 从 Release assets 中查找 APK 下载链接
+      const apkAsset = (data.assets ?? []).find(
+        (a: { name: string; browser_download_url: string }) => a.name.endsWith('.apk')
+      );
+      const apkUrl = apkAsset?.browser_download_url ?? '';
+
+      const hasUpdate = latest && compareSemver(latest, APP_VERSION) > 0;
       setUpdateInfo({
         hasUpdate,
         latest,
         notes: data.body || '暂无更新说明',
         downloadUrl: data.html_url || `https://github.com/${GITHUB_REPO}/releases/latest`,
+        apkUrl,
       });
     } catch {
-      setUpdateInfo({ hasUpdate: false, latest: APP_VERSION, notes: '检查更新失败，请稍后重试', downloadUrl: '' });
+      setUpdateInfo({ hasUpdate: false, latest: APP_VERSION, notes: '检查更新失败，请稍后重试', downloadUrl: '', apkUrl: '' });
     } finally {
       setUpdateChecking(false);
+    }
+  }, []);
+
+  /** 下载并安装更新 */
+  const handleInstallUpdate = useCallback(async () => {
+    if (!updateInfo?.apkUrl) {
+      // 无 APK 链接，打开浏览器下载页
+      window.open(updateInfo?.downloadUrl || `https://github.com/${GITHUB_REPO}/releases/latest`, '_blank');
+      return;
+    }
+
+    // Android 原生端：下载 APK 并触发安装
+    if (isNative()) {
+      setInstalling(true);
+      try {
+        await ApkInstaller.installApk({ url: updateInfo.apkUrl });
+      } catch {
+        // 安装器启动后可能抛出异常（用户拒绝权限等），回退到浏览器
+        window.open(updateInfo.downloadUrl, '_blank');
+      } finally {
+        setInstalling(false);
+      }
+      return;
+    }
+
+    // Electron / Web：打开浏览器下载
+    if (isElectron()) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (window as any).electronAPI?.openExternal?.(updateInfo.downloadUrl);
+      } catch {
+        window.open(updateInfo.downloadUrl, '_blank');
+      }
+      return;
+    }
+
+    window.open(updateInfo.downloadUrl, '_blank');
+  }, [updateInfo]);
+
+  /** 打开 QQ 群 */
+  const handleQQGroup = useCallback(async () => {
+    const qqUrl = 'https://qm.qq.com/q/9paJFuZbCE';
+
+    if (isNative()) {
+      try {
+        const encodedUrl = encodeURIComponent(qqUrl);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).location.href = `mqqopensdkapi://bizAgent/qm/qr?url=${encodedUrl}`;
+        setTimeout(() => { window.open(qqUrl, '_blank'); }, 1500);
+      } catch {
+        window.open(qqUrl, '_blank');
+      }
+    } else if (isElectron()) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (window as any).electronAPI?.openExternal?.(qqUrl);
+      } catch {
+        window.open(qqUrl, '_blank');
+      }
+    } else {
+      window.open(qqUrl, '_blank');
     }
   }, []);
 
@@ -186,11 +287,12 @@ export default function Settings() {
             {updateInfo.hasUpdate ? (
               <>
                 <p className="text-[var(--accent)]">发现新版本 v{updateInfo.latest}</p>
-                <p className="text-[var(--text-secondary)]">{updateInfo.notes}</p>
-                <a href={updateInfo.downloadUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--bg-primary)] hover:opacity-90">
-                  <Download size={12} />下载更新
-                </a>
+                <p className="text-[var(--text-secondary)] whitespace-pre-wrap">{updateInfo.notes}</p>
+                <button onClick={handleInstallUpdate} disabled={installing}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--bg-primary)] hover:opacity-90 disabled:opacity-50">
+                  {installing ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                  {installing ? '下载安装中...' : (isNative() && updateInfo.apkUrl ? '下载并安装' : '下载更新')}
+                </button>
               </>
             ) : (
               <p className="text-[var(--text-secondary)]">已是最新版本</p>
@@ -207,10 +309,10 @@ export default function Settings() {
             className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline">
             <ExternalLink size={14} />Printer Analytics (HACS)
           </a>
-          <a href={QQ_GROUP_URL} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline">
+          <button onClick={handleQQGroup}
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline bg-transparent border-none cursor-pointer">
             <MessageCircle size={14} />QQ 交流群
-          </a>
+          </button>
         </div>
       </section>
     </div>

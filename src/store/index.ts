@@ -1,24 +1,8 @@
 import { create } from 'zustand';
+import type { BambuHistoryItem } from '@/types/bambu';
 
-/** Bambu 打印记录类型 */
-export interface BambuRecord {
-  id: string;
-  device_id: string;
-  device_name: string;
-  model_id: string;
-  task_id: string;
-  status: number;
-  file_name: string;
-  start_time: string;
-  end_time: string;
-  duration: number;
-  weight: number;
-  filament_type: string;
-  filament_color: string;
-  cover_image: string;
-  thumbnail: string;
-  plate_index: number;
-}
+/** Bambu 打印记录类型（使用共享类型） */
+export type BambuRecord = BambuHistoryItem;
 
 /** 统计响应类型 */
 export interface StatsResponse {
@@ -72,6 +56,9 @@ const useAppStore = create<AppState>((set) => ({
   stats: null,
 
   setAuth: (token: string) => {
+    // 安全说明：token 以明文存储在 localStorage 中，存在 XSS 攻击窃取风险。
+    // 当前为浏览器端应用，无更安全的替代方案（如 HttpOnly Cookie 需后端配合）。
+    // 若后续支持后端 Session，应迁移至 HttpOnly Cookie 存储。
     localStorage.setItem('bambu_token', token);
     set({ isLoggedIn: true, token });
   },

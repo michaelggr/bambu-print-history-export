@@ -1,4 +1,6 @@
-﻿﻿type JsonObject = Record<string, unknown>;
+﻿﻿import type { BambuHistoryItem } from '@/types/bambu';
+
+type JsonObject = Record<string, unknown>;
 
 type NativeRequestOptions = {
   method?: string;
@@ -30,6 +32,8 @@ export function getNativeToken(): string | null {
 }
 
 function saveToken(token: string) {
+  // 安全说明：token 以明文存储在 localStorage 中，存在 XSS 攻击窃取风险。
+  // 原生端（Capacitor WebView）风险较低，但仍需注意不将 token 暴露给第三方脚本。
   localStorage.setItem(TOKEN_KEY, token);
 }
 
@@ -167,7 +171,10 @@ export async function nativeFetchHistory(): Promise<{ success: boolean; data?: J
   }
 }
 
-export function nativeGetCachedHistory(): any[] {
+/** 缓存的历史记录项类型（使用共享类型，对齐后端 BambuHistoryItem 核心字段） */
+export type NativeHistoryItem = BambuHistoryItem;
+
+export function nativeGetCachedHistory(): NativeHistoryItem[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     return raw ? JSON.parse(raw) : [];

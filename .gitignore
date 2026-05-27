@@ -1,4 +1,4 @@
-﻿﻿# Logs
+﻿﻿﻿﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -33,3 +33,7 @@ package-lock.json
 # Data files
 data/
 api_debug.log
+
+# Android signing
+*.keystore
+*.jks
