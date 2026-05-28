@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Bambu Cloud API 调用层（纯前端）
  * 统一封装 Bambu Cloud API 的 HTTP 请求，支持三种运行环境：
  * - Electron: 通过 IPC 调用主进程的 Node.js https 模块（绕过 CORS）
@@ -298,9 +298,9 @@ export async function fetchHistory(
     if (allItems.length > 0) break;
   }
 
-  // 过滤已存在的记录（增量更新）
+  // 过滤已存在的记录（增量更新，统一用 String 转换避免数字/字符串类型不匹配）
   if (existingIds && existingIds.size > 0) {
-    allItems = allItems.filter(item => !existingIds.has(item.id ?? ''));
+    allItems = allItems.filter(item => !existingIds.has(String(item.id ?? '')));
   }
 
   return allItems;
