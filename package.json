@@ -1,7 +1,7 @@
 {
   "name": "bambu-export",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.4.1",
   "type": "module",
   "description": "Bambu Lab 打印历史导出工具",
   "main": "electron/main.cjs",
