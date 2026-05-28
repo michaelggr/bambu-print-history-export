@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   DownloadCloud,
@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Info,
 } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import CoverImage from '@/components/CoverImage';
@@ -229,6 +230,25 @@ export default function History() {
             {downloading ? '下载中...' : '全量下载'}
           </button>
         </div>
+      </div>
+
+      {/* ===== 拓竹 API 限制提示 ===== */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-3">
+        <Info size={16} className="mt-0.5 shrink-0 text-[var(--accent)]" />
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+          <span className="font-medium text-[var(--text-primary)]">拓竹服务器限制：</span>
+          仅可导出最近 90 天内的打印记录。如需长期保存完整历史，
+          建议配合{' '}
+          <a
+            href="https://github.com/michaelggr/ha-printer-analytics"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-dashed underline-offset-2 hover:text-[var(--accent)]"
+          >
+            Home Assistant Printer Analytics
+          </a>{' '}
+          插件持续自动记录。
+        </p>
       </div>
 
       {/* ===== 筛选栏 ===== */}
