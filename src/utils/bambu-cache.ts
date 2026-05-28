@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 缓存管理层（纯前端）
  * 基于 localStorage 管理 token、历史数据、设置等，
  * 对齐后端 cache.ts 的完整功能，含 ids 索引和增量更新支持。
@@ -35,21 +35,26 @@ function writeJson(key: string, data: unknown): void {
 // Token 缓存
 // ---------------------------------------------------------------------------
 
-interface TokenData {
-  token: string;
-  saved_at: number;
-  account: string;
-}
+// TokenData 仅用于 saveToken 的写入格式参考，loadToken 已兼容多种格式
 
 /** 保存 token */
 export function saveToken(token: string, account = ''): void {
   writeJson(TOKEN_KEY, { token, saved_at: Date.now(), account });
 }
 
-/** 读取 token */
+/** 读取 token（兼容 JSON 对象格式和纯字符串格式） */
 export function loadToken(): string | null {
-  const data = readJson<TokenData>(TOKEN_KEY);
-  return data?.token ?? null;
+  const raw = localStorage.getItem(TOKEN_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'string') return parsed || null;
+    if (parsed?.token && typeof parsed.token === 'string') return parsed.token;
+    return null;
+  } catch {
+    // 非 JSON 字符串，直接当作 token
+    return raw || null;
+  }
 }
 
 /** 清除 token */

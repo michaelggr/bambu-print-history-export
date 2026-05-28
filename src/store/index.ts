@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import type { BambuHistoryItem } from '@/types/bambu';
 
 /** Bambu 打印记录类型（使用共享类型） */
@@ -37,12 +37,17 @@ interface AppState {
   setLoading: (loading: boolean) => void;
 }
 
-/** 从 localStorage 恢复 token */
+/** 从 localStorage 恢复 token（兼容 JSON 对象和纯字符串格式） */
 function getStoredToken(): string | null {
   try {
-    return localStorage.getItem('bambu_token');
-  } catch {
+    const raw = localStorage.getItem('bambu_token');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'string') return parsed || null;
+    if (parsed?.token && typeof parsed.token === 'string') return parsed.token;
     return null;
+  } catch {
+    return localStorage.getItem('bambu_token') || null;
   }
 }
 
@@ -56,10 +61,8 @@ const useAppStore = create<AppState>((set) => ({
   stats: null,
 
   setAuth: (token: string) => {
-    // 安全说明：token 以明文存储在 localStorage 中，存在 XSS 攻击窃取风险。
-    // 当前为浏览器端应用，无更安全的替代方案（如 HttpOnly Cookie 需后端配合）。
-    // 若后续支持后端 Session，应迁移至 HttpOnly Cookie 存储。
-    localStorage.setItem('bambu_token', token);
+    // 使用 JSON 格式存储，与 bambu-cache.ts 的 saveToken 保持一致
+    localStorage.setItem('bambu_token', JSON.stringify({ token, saved_at: Date.now() }));
     set({ isLoggedIn: true, token });
   },
 
