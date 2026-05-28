@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom';
+﻿import { NavLink } from 'react-router-dom';
 import { History, BarChart3, Download, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import logoUrl from '/logo.webp';
 
 const navItems = [
   { to: '/', icon: History, label: '历史' },
@@ -15,7 +16,7 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-14 items-center justify-around border-t border-[var(--border)] bg-[var(--bg-secondary)]">
       {/* 手机端 Logo */}
       <div className="flex flex-col items-center gap-0.5 px-3 py-1">
-        <img src="/logo.webp" alt="Logo" className="h-6 w-6 rounded-md object-cover" />
+        <img src={logoUrl} alt="Logo" className="h-6 w-6 rounded-md object-cover" />
       </div>
       {navItems.map(({ to, icon: Icon, label }) => (
         <NavLink

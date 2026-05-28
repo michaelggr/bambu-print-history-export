@@ -1,7 +1,8 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+﻿import { NavLink, useNavigate } from 'react-router-dom';
 import { History, BarChart3, Download, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAppStore from '@/store';
+import logoUrl from '/logo.webp';
 
 /** 导航项配置 */
 const navItems = [
@@ -25,7 +26,7 @@ export default function Sidebar() {
     <aside className="flex h-screen w-[200px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--bg-secondary)]">
       {/* 顶部 Logo */}
       <div className="flex h-14 items-center gap-2 border-b border-[var(--border)] px-4">
-        <img src="/logo.webp" alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
+        <img src={logoUrl} alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
         <span className="font-mono-heading text-sm font-bold text-[var(--text-primary)]">
           Bambu
         </span>

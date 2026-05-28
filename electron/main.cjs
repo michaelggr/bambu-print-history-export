@@ -89,10 +89,11 @@ ipcMain.handle('open-external', async (_event, url) => {
 // ---------------------------------------------------------------------------
 
 function createWindow() {
+  const iconPath = path.join(app.getAppPath(), 'resources', 'icon.png');
   mainWindow = new BrowserWindow({
     width: 1200, height: 800, minWidth: 900, minHeight: 600,
     title: 'Bambu Lab 打印历史导出工具',
-    icon: path.join(__dirname, '../resources/icon.png'),
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
