@@ -6,6 +6,7 @@ Bambu Lab 3D 打印机的历史记录导出与分析工具，支持全量/增量
 
 - **登录认证**：支持手机号/邮箱 + 验证码或密码登录 Bambu Lab 账号
 - **历史下载**：全量或增量下载打印历史记录
+- **数据导入**：支持 JSON / CSV / HA (Printer Analytics) 格式导入，可选增量合并或覆盖模式
 - **数据导出**：导出为 CSV / JSON 格式
 - **统计分析**：
   - 打印状态分布（成功/失败/取消）
@@ -18,6 +19,10 @@ Bambu Lab 3D 打印机的历史记录导出与分析工具，支持全量/增量
   - 颜色使用量对比
 - **保存统计图**：一键保存统计页为图片（PNG + 剪贴板）
 - **HA 集成**：配套 [Printer Analytics (HACS)](https://github.com/michaelggr/ha-printer-analytics) 插件
+
+## 注意事项
+
+> **拓竹服务器限制**：Bambu Cloud API 仅可导出最近 **90 天**内的打印记录。如需长期保存完整历史，建议配合 [Home Assistant Printer Analytics](https://github.com/michaelggr/ha-printer-analytics) 插件持续自动记录，再通过本工具的**数据导入**功能导入历史数据。
 
 ## 下载安装
 
