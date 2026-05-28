@@ -208,23 +208,30 @@ export function parseHA(content: string): ImportResult {
       running: 1,
     };
 
-    const items: BambuHistoryItem[] = parsed.history.map((rec) => ({
-      id: String(rec.design_id ?? `ha-${rec.task_name ?? ''}-${rec.start_time ?? ''}`),
-      designTitle: rec.task_name,
-      status: haStatusMap[rec.status ?? ''] ?? 0,
-      deviceId: rec.printer_serial,
-      startTime: rec.start_time ? haTimeToISO(rec.start_time) : undefined,
-      endTime: rec.end_time ? haTimeToISO(rec.end_time) : undefined,
-      costTime: Math.round((rec.duration_hours ?? 0) * 3600),
-      weight: rec.total_weight,
-      length: Math.round((rec.total_length ?? 0) * 1000), // m → mm
-      filamentType: rec.filament_type,
-      filamentColor: rec.filament_color,
-      bedType: rec.print_bed_type,
-      mode: rec.slice_mode,
-      useAms: rec.multi_color ?? false,
-      cover: rec.cover_image_url,
-    }));
+    const items: BambuHistoryItem[] = parsed.history.map((rec) => {
+      // 优先使用 design_id 作为主键（与 Bambu API 原始 ID 保持一致）
+      const did = rec.design_id;
+      const id = did
+        ? String(did)
+        : `ha-${rec.task_name ?? ''}-${rec.start_time ?? ''}`;
+      return {
+        id,
+        designTitle: rec.task_name,
+        status: haStatusMap[rec.status ?? ''] ?? 0,
+        deviceId: rec.printer_serial,
+        startTime: rec.start_time ? haTimeToISO(rec.start_time) : undefined,
+        endTime: rec.end_time ? haTimeToISO(rec.end_time) : undefined,
+        costTime: Math.round((rec.duration_hours ?? 0) * 3600),
+        weight: rec.total_weight,
+        length: Math.round((rec.total_length ?? 0) * 1000),
+        filamentType: rec.filament_type,
+        filamentColor: rec.filament_color,
+        bedType: rec.print_bed_type,
+        mode: rec.slice_mode,
+        useAms: rec.multi_color ?? false,
+        cover: rec.cover_image_url,
+      };
+    });
 
     if (items.length === 0) return { success: false, error: 'HA history 为空' };
     return { success: true, format: 'ha' as ImportFormat, data: items };

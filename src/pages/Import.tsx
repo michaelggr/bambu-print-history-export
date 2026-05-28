@@ -127,9 +127,14 @@ export default function Import() {
     }
   };
 
-  // 预览统计
+  // 预览统计（用实际 ID 匹配预估新增数）
   const previewCount = parseResult?.success ? parseResult.data.length : 0;
-  const existingCount = bambuCache.loadHistoryCache().length;
+  const existingIds = bambuCache.loadExistingIds();
+  const existingCount = existingIds.size;
+  const estimatedNew =
+    parseResult?.success
+      ? parseResult.data.filter((item) => !existingIds.has(String(item.id ?? ''))).length
+      : 0;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -222,7 +227,7 @@ export default function Import() {
                     <p className="text-sm font-medium text-[var(--text-primary)]">增量合并（推荐）</p>
                     <p className="text-xs text-[var(--text-secondary)]">
                       按 ID 去重，新记录追加，已存在则跳过
-                      {previewCount > 0 && existingCount > 0 && `（预计新增约 ${Math.max(0, previewCount - existingCount)} 条）`}
+                      {previewCount > 0 && existingCount > 0 && `（预计新增约 ${estimatedNew} 条）`}
                     </p>
                   </div>
                 </label>
