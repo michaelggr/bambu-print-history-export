@@ -1,5 +1,5 @@
 ﻿import { NavLink } from 'react-router-dom';
-import { History, BarChart3, Download, Settings } from 'lucide-react';
+import { History, BarChart3, Download, Upload, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logoUrl from '/logo.webp';
 
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/', icon: History, label: '历史' },
   { to: '/stats', icon: BarChart3, label: '统计' },
   { to: '/export', icon: Download, label: '导出' },
+  { to: '/import', icon: Upload, label: '导入' },
   { to: '/settings', icon: Settings, label: '设置' },
 ];
 

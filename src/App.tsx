@@ -3,6 +3,7 @@ import Login from '@/pages/Login';
 import History from '@/pages/History';
 import Stats from '@/pages/Stats';
 import Export from '@/pages/Export';
+import Import from '@/pages/Import';
 import Settings from '@/pages/Settings';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/" element={<History />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/export" element={<Export />} />
+            <Route path="/import" element={<Import />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>

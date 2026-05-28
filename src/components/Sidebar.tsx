@@ -1,5 +1,5 @@
 ﻿import { NavLink, useNavigate } from 'react-router-dom';
-import { History, BarChart3, Download, Settings, LogOut } from 'lucide-react';
+import { History, BarChart3, Download, Upload, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAppStore from '@/store';
 import logoUrl from '/logo.webp';
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/', icon: History, label: '历史记录' },
   { to: '/stats', icon: BarChart3, label: '分析统计' },
   { to: '/export', icon: Download, label: '数据导出' },
+  { to: '/import', icon: Upload, label: '数据导入' },
   { to: '/settings', icon: Settings, label: '系统设置' },
 ];
 
