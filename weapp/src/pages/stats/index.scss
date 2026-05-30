@@ -1,0 +1,362 @@
+﻿﻿.stats-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0D0F1A;
+}
+
+.period-tabs {
+  display: flex;
+  background: #161829;
+  border-bottom: 1px solid #222540;
+
+  .tab-item {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    font-size: 14px;
+    color: #5E5E78;
+    position: relative;
+
+    &.active {
+      color: #00D4AA;
+      font-weight: 600;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 25%;
+        right: 25%;
+        height: 3px;
+        background: #00D4AA;
+        border-radius: 2px;
+      }
+    }
+  }
+}
+
+.stats-scroll {
+  flex: 1;
+  padding: 10px 14px;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stat-card {
+  background: #161829;
+  border-radius: 16px;
+  padding: 14px;
+  text-align: center;
+  border: 1px solid #222540;
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #00D4AA;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: #5E5E78;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.section {
+  background: #161829;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid #222540;
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #E8E8F0;
+    display: block;
+    margin-bottom: 14px;
+  }
+}
+
+.sub-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9B9BB0;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.hint-text {
+  font-size: 13px;
+  color: #5E5E78;
+  text-align: center;
+  display: block;
+  padding: 24px 0;
+}
+
+.status-row {
+  display: flex;
+  gap: 10px;
+}
+
+.status-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+
+  &.success { background: rgba(0, 212, 170, 0.1); }
+  &.failed { background: rgba(255, 107, 107, 0.1); }
+  &.cancelled { background: rgba(94, 94, 120, 0.15); }
+
+  .status-num {
+    font-size: 22px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  &.success .status-num { color: #00D4AA; }
+  &.failed .status-num { color: #FF6B6B; }
+  &.cancelled .status-num { color: #5E5E78; }
+
+  .status-label {
+    font-size: 12px;
+    color: #5E5E78;
+  }
+}
+
+.device-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #222540;
+
+  &:last-child { border-bottom: none; }
+
+  .device-name { font-size: 14px; color: #E8E8F0; font-weight: 500; }
+  .device-stats {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: #9B9BB0;
+  }
+}
+
+.filament-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #222540;
+
+  &:last-child { border-bottom: none; }
+}
+
+.filament-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.filament-name { font-size: 13px; color: #E8E8F0; font-weight: 500; }
+.filament-rate { font-size: 12px; font-weight: 600; }
+
+.filament-right {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #5E5E78;
+}
+
+.extreme-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #222540;
+
+  &:last-child { border-bottom: none; }
+  .extreme-label {
+    font-size: 11px;
+    color: #5E5E78;
+    display: block;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .extreme-value {
+    font-size: 14px;
+    color: #E8E8F0;
+  }
+}
+
+.dist-row, .param-row, .bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.dist-label, .param-label, .bar-label {
+  width: 70px;
+  font-size: 12px;
+  color: #9B9BB0;
+  flex-shrink: 0;
+}
+
+.dist-bar-bg, .param-bar-bg, .bar-track, .color-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: #2A2D45;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dist-bar, .param-bar, .bar-fill, .color-bar {
+  height: 100%;
+  background: #00D4AA;
+  border-radius: 3px;
+  min-width: 4px;
+}
+
+.mode-bar { background: #6C5CE7; }
+.fail-bar { background: #FF6B6B; }
+
+.dist-count, .param-count, .bar-count {
+  width: 30px;
+  font-size: 12px;
+  color: #5E5E78;
+  text-align: right;
+}
+
+.compare-table {
+  width: 100%;
+}
+
+.compare-header, .compare-row {
+  display: flex;
+  padding: 8px 0;
+  border-bottom: 1px solid #222540;
+}
+
+.compare-header {
+  font-weight: 600;
+  color: #5E5E78;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.compare-cell {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: #9B9BB0;
+
+  &.label-cell {
+    text-align: left;
+    flex: 1.2;
+    color: #E8E8F0;
+  }
+}
+
+.compare-row .compare-cell {
+  color: #E8E8F0;
+  font-weight: 500;
+}
+
+.heatmap-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  position: relative;
+}
+
+.heatmap-tip {
+  display: none;
+}
+
+.rate-row {
+  display: flex;
+  gap: 10px;
+}
+
+.rate-card {
+  flex: 1;
+  text-align: center;
+  padding: 16px 10px;
+  border-radius: 12px;
+  background: #1A1D30;
+  border: 1px solid #222540;
+
+  .rate-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #00D4AA;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .rate-label {
+    font-size: 13px;
+    color: #9B9BB0;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .rate-detail {
+    font-size: 11px;
+    color: #5E5E78;
+  }
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.color-weight {
+  width: 50px;
+  font-size: 12px;
+  color: #5E5E78;
+  text-align: right;
+}
+
+.loading-text {
+  display: block;
+  text-align: center;
+  padding: 48px;
+  color: #5E5E78;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 80px;
+
+  .empty-text { font-size: 16px; color: #9B9BB0; margin-bottom: 8px; }
+  .empty-hint { font-size: 12px; color: #5E5E78; }
+}

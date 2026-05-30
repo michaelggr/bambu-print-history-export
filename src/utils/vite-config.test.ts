@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 
 const viteConfig = readFileSync('vite.config.ts', 'utf-8')

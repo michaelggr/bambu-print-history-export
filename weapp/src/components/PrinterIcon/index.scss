@@ -1,0 +1,146 @@
+﻿﻿﻿﻿﻿﻿.fdm-icon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 进料管顶部 */
+.fdm-feed {
+  width: 25%;
+  height: 12.5%;
+  border: 2px solid #00D4AA;
+  border-radius: 3px 3px 1px 1px;
+  background: rgba(0, 212, 170, 0.06);
+  position: relative;
+  z-index: 3;
+}
+
+/* 散热器主体 */
+.fdm-heatsink {
+  width: 39%;
+  height: 44%;
+  border-left: 2px solid #00D4AA;
+  border-right: 2px solid #00D4AA;
+  background: rgba(0, 212, 170, 0.04);
+  position: relative;
+  z-index: 2;
+  margin-top: -2%;
+}
+
+.fin {
+  position: absolute;
+  left: -18%;
+  right: -18%;
+  height: 5%;
+  background: #00D4AA;
+  opacity: 0.35;
+  border-radius: 1px;
+}
+
+.fin-1 { top: 7%; }
+.fin-2 { top: 28%; }
+.fin-3 { top: 50%; opacity: 0.5; }
+.fin-4 { top: 71%; }
+.fin-5 { bottom: 7%; }
+
+/* 加热块 */
+.fdm-heater {
+  width: 32%;
+  height: 15.6%;
+  background: rgba(0, 212, 170, 0.12);
+  border: 1.5px solid #00D4AA;
+  border-radius: 2px;
+  position: relative;
+  z-index: 2;
+  margin-top: -2%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8%;
+  box-sizing: border-box;
+}
+
+.heater-dot {
+  width: 7%;
+  height: 7%;
+  min-width: 3px;
+  min-height: 3px;
+  max-width: 6px;
+  max-height: 6px;
+  background: #00D4AA;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.heater-d1 { opacity: 0.6; }
+.heater-d2 { opacity: 0.3; }
+
+/* 喷嘴喉管 */
+.fdm-throat {
+  width: 14%;
+  height: 11%;
+  background: linear-gradient(to bottom, rgba(0, 212, 170, 0.15), rgba(0, 212, 170, 0.25));
+  border-left: 1.5px solid #00D4AA;
+  border-right: 1.5px solid #00D4AA;
+  position: relative;
+  z-index: 2;
+}
+
+/* 喷嘴尖端 */
+.fdm-nozzle {
+  width: 21%;
+  height: 19%;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nozzle-tip {
+  width: 67%;
+  height: 58%;
+  background: #00D4AA;
+  opacity: 0.6;
+  border-radius: 0 0 50% 50%;
+}
+
+/* 散热风扇 */
+.fdm-fan {
+  position: absolute;
+  left: -32%;
+  top: 25%;
+  width: 28.5%;
+  aspect-ratio: 1 / 1;
+  border: 1.5px solid #00D4AA;
+  border-radius: 50%;
+  background: rgba(0, 212, 170, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.fan-blade {
+  position: absolute;
+  width: 37%;
+  height: 13%;
+  background: #00D4AA;
+  opacity: 0.4;
+  border-radius: 1px;
+}
+
+.fan-b1 { transform: translateY(-120%); }
+.fan-b2 { transform: rotate(120deg) translateY(-120%); }
+.fan-b3 { transform: rotate(240deg) translateY(-120%); }
+
+.fan-hub {
+  width: 25%;
+  height: 25%;
+  min-width: 3px;
+  min-height: 3px;
+  background: #00D4AA;
+  opacity: 0.5;
+  border-radius: 50%;
+}

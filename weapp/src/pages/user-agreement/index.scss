@@ -1,0 +1,118 @@
+﻿.agreement-page {
+  min-height: 100vh;
+  background-color: #0D0F1A;
+}
+
+.agreement-container {
+  padding: 32rpx 28rpx;
+  padding-bottom: 80rpx;
+}
+
+.agreement-header {
+  text-align: center;
+  margin-bottom: 40rpx;
+  padding-bottom: 28rpx;
+  border-bottom: 2rpx solid #2A2D45;
+}
+
+.title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #E8E8F0;
+  margin-bottom: 16rpx;
+  letter-spacing: 4rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #00D4AA;
+  margin-bottom: 12rpx;
+  font-weight: 600;
+}
+
+.update-date {
+  display: block;
+  font-size: 24rpx;
+  color: #5E5E78;
+}
+
+.section {
+  margin-bottom: 32rpx;
+  padding: 28rpx;
+  background-color: #161829;
+  border-radius: 16rpx;
+  border-left: 6rpx solid #00D4AA;
+}
+
+.highlight-section {
+  background-color: rgba(253, 203, 110, 0.08);
+  border-left-color: #FDCB6E;
+}
+
+.warning-section {
+  background-color: rgba(255, 107, 107, 0.06);
+  border-left-color: #FF6B6B;
+}
+
+.section-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #00D4AA;
+  margin-bottom: 20rpx;
+  line-height: 1.4;
+}
+
+.highlight-text {
+  display: block;
+  font-size: 26rpx;
+  color: #FDCB6E;
+  line-height: 1.8;
+  font-weight: 500;
+}
+
+.sub-section {
+  margin-top: 20rpx;
+  padding-left: 16rpx;
+}
+
+.sub-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #E8E8F0;
+  margin-bottom: 12rpx;
+}
+
+.content {
+  display: block;
+  font-size: 26rpx;
+  color: #9B9BB0;
+  line-height: 1.8;
+  text-align: justify;
+  white-space: pre-line;
+}
+
+.contact-section {
+  border-left-color: #6C5CE7;
+}
+
+.contact-link {
+  color: #00D4AA;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.agreement-footer {
+  text-align: center;
+  padding: 48rpx 0 32rpx;
+  margin-top: 24rpx;
+}
+
+.footer-note {
+  font-size: 26rpx;
+  color: #5E5E78;
+  font-style: italic;
+}

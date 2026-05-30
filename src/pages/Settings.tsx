@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Trash2, Info, ExternalLink, Loader2, RefreshCw, Download, MessageCircle } from 'lucide-react';
+import { LogOut, Trash2, Info, ExternalLink, Loader2, RefreshCw, Download, MessageCircle, Shield, FileText } from 'lucide-react';
 import useAppStore from '@/store';
 import { api } from '@/utils/api';
 import { isNative, isElectron } from '@/utils/platform';
@@ -313,6 +313,18 @@ export default function Settings() {
             className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] transition-colors hover:underline bg-transparent border-none cursor-pointer">
             <MessageCircle size={14} />QQ 交流群
           </button>
+        </div>
+
+        {/* 合规文档 */}
+        <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[var(--border)] mt-4">
+          <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
+            <Shield size={14} />隐私政策
+          </a>
+          <a href="/user-agreement" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
+            <FileText size={14} />用户协议
+          </a>
         </div>
       </section>
     </div>

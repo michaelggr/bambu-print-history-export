@@ -1,4 +1,4 @@
-﻿/**
+﻿﻿﻿﻿﻿﻿﻿﻿﻿/**
  * Electron preload 脚本
  * 暴露 IPC API 到渲染进程：
  * - platform: 当前操作系统平台
