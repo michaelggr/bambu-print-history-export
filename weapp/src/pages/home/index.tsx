@@ -217,28 +217,27 @@ export default function HomePage() {
         </View>
 
         <View className="support-block">
-          <Text className="support-subtitle">🇨🇳 支持的账号类型</Text>
-          <View className="account-types">
-            <View className="account-type-card">
+          <Text className="support-subtitle">🇨🇳 账号要求</Text>
+          <View className="account-single">
+            <View className="account-type-card featured">
               <Text className="account-icon">📱</Text>
-              <Text className="account-name">中国区账号</Text>
-              <Text className="account-desc">手机号 + 验证码登录</Text>
-              <Text className="account-recommend">推荐使用</Text>
-            </View>
-            <View className="account-type-card dimmed">
-              <Text className="account-icon">🌐</Text>
-              <Text className="account-name">国际区账号</Text>
-              <Text className="account-desc">邮箱 + 验证码登录</Text>
+              <Text className="account-name">拓竹中国区账号</Text>
+              <Text className="account-desc">使用手机号 + 验证码登录</Text>
+              <View className="account-features">
+                <Text className="feature-check">✅ 已测试验证</Text>
+                <Text className="feature-check">✅ 官方 API 支持</Text>
+                <Text className="feature-check">✅ 数据同步稳定</Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View className="notice-box">
-          <Text className="notice-icon">ℹ️</Text>
-          <Text className="notice-text">
-            本工具基于拓竹（Bambu Lab）官方开放 API 构建，
-            需要您拥有有效的拓竹账号才能同步打印数据。
-          </Text>
+          <View className="notice-box">
+            <Text className="notice-icon">ℹ️</Text>
+            <Text className="notice-text">
+              本工具基于拓竹（Bambu Lab）官方开放 API 构建，
+              目前仅支持中国区账号（手机号登录），需要您拥有有效的拓竹账号才能同步打印数据。
+            </Text>
+          </View>
         </View>
       </View>
 
