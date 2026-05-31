@@ -1,4 +1,4 @@
-﻿﻿import { View, Text, Input, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿import { View, Text, Input, Button } from '@tarojs/components';
 import { useState, useEffect } from 'react';
 import Taro from '@tarojs/taro';
 import { api } from '@/utils/api';
@@ -13,13 +13,18 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState(0);
   const setLogin = useAppStore(s => s.setLogin);
 
-  // 如果已登录，跳转到首页
+  // 如果已登录，返回首页
   useEffect(() => {
     const checkLogin = async () => {
       try {
         const { loggedIn } = await api.checkAuth();
         if (loggedIn) {
-          Taro.switchTab({ url: '/pages/history/index' });
+          Taro.navigateBack(); // 返回上一页（通常是首页）
+          // 如果没有上一页，跳转到首页
+          const pages = Taro.getCurrentPages();
+          if (pages.length <= 1) {
+            Taro.switchTab({ url: '/pages/history/index' });
+          }
         }
       } catch (e) {
         console.warn('检查登录状态失败:', e);
@@ -80,7 +85,11 @@ export default function LoginPage() {
       const res = await api.loginWithCode(phone.trim(), code.trim());
       if (res.success && res.token) {
         setLogin(res.token);
-        Taro.switchTab({ url: '/pages/history/index' });
+        // 登录成功后返回上一页或跳转到历史页
+        Taro.navigateBack();
+        setTimeout(() => {
+          Taro.switchTab({ url: '/pages/history/index' });
+        }, 100);
       } else {
         setError(res.error || '登录失败');
       }

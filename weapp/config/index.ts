@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿import { defineConfig } from '@tarojs/cli';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import { defineConfig } from '@tarojs/cli';
 import path from 'path';
 
 const srcPath = path.resolve(__dirname, '..', 'src');

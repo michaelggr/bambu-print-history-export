@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView } from '@tarojs/components';
 import { useDidShow } from '@tarojs/taro';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';

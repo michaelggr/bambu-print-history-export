@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿export interface BambuHistoryItem {
+﻿﻿﻿﻿﻿﻿﻿﻿﻿export interface BambuHistoryItem {
   id: string;
   designId?: number | string;
   designTitle?: string;

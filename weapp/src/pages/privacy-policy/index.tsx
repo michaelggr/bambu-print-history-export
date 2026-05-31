@@ -1,4 +1,4 @@
-﻿import { View, Text, ScrollView } from '@tarojs/components';
+﻿﻿import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import './index.scss';
 

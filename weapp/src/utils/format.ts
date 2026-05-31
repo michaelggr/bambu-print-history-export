@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿export function statusText(status: number): string {
+﻿﻿﻿﻿﻿﻿﻿﻿﻿export function statusText(status: number): string {
   const map: Record<number, string> = { 2: '成功', 3: '失败', 1: '取消', 4: '取消' };
   return map[status] ?? '未知';
 }

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿import { defineConfig } from '@tarojs/cli';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import { defineConfig } from '@tarojs/cli';
 
 export default defineConfig({
   mini: {},

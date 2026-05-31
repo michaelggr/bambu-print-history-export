@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem } from '@/types/bambu';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem } from '@/types/bambu';
 
 export interface FilterParams {
   status?: string;

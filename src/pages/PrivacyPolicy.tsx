@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿﻿import { useState } from 'react';
 import { Mail, ExternalLink } from 'lucide-react';
 
 export default function PrivacyPolicy() {

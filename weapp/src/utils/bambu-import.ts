@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem, HAFormat } from '@/types/bambu';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem, HAFormat } from '@/types/bambu';
 import * as bambuCache from './bambu-cache';
 
 export type ImportFormat = 'json' | 'csv' | 'ha';

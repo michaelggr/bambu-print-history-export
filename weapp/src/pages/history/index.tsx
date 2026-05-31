@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
 import { useDidShow, usePullDownRefresh, useShareAppMessage } from '@tarojs/taro';
 import { useState, useCallback } from 'react';
 import Taro from '@tarojs/taro';
