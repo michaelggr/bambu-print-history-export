@@ -1,10 +1,12 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Button, Picker } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Button, Picker } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 import { api } from '@/utils/api';
 import { useAppStore } from '@/store';
 import { extractDeviceList } from '@/utils/bambu-filter';
 import type { FilterParams } from '@/utils/bambu-filter';
+import type { ImportFormat, ImportResult } from '@/utils/bambu-import';
+import { loadExistingIds } from '@/utils/bambu-cache';
 import PrinterIcon from '@/components/PrinterIcon';
 import './index.scss';
 
@@ -26,6 +28,12 @@ export default function ExportPage() {
   const [statusIdx, setStatusIdx] = useState(0);
   const [deviceIdx, setDeviceIdx] = useState(0);
   const [devices, setDevices] = useState<string[]>([]);
+  // 导入功能状态
+  const [importing, setImporting] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseResult, setParseResult] = useState<ImportResult | null>(null);
+  const [fileName, setFileName] = useState('');
+  const [importMode, setImportMode] = useState<'merge' | 'overwrite'>('merge');
   const { history } = useAppStore();
 
   if (devices.length === 0 && history.length > 0) {
@@ -133,6 +141,71 @@ export default function ExportPage() {
     }
   };
 
+  // ====== 导入功能 ======
+  const handleChooseImportFile = () => {
+    Taro.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['.json', '.csv', '.ha'],
+      success: async (res) => {
+        const file = res.tempFiles[0];
+        setFileName(file.name);
+        setParsing(true);
+        setParseResult(null);
+
+        try {
+          const fs = Taro.getFileSystemManager();
+          const content = fs.readFileSync(file.path, 'utf8') as string;
+
+          const { parseImportFile } = await import('@/utils/bambu-import');
+          const parsed = parseImportFile(content);
+          setParseResult(parsed);
+        } catch (e: any) {
+          setParseResult({ success: false, error: e.message || '读取文件失败' });
+        } finally {
+          setParsing(false);
+        }
+      },
+      fail: () => {},
+    });
+  };
+
+  const handleImport = async () => {
+    if (!parseResult || !parseResult.success) return;
+
+    if (importMode === 'overwrite') {
+      const { confirm } = await Taro.showModal({
+        title: '确认覆盖',
+        content: '覆盖操作将清除当前所有历史数据，且不可撤销！',
+        confirmColor: '#FF6B6B',
+      });
+      if (!confirm) return;
+    }
+
+    setImporting(true);
+    try {
+      const content = JSON.stringify(parseResult.data);
+      const res = await api.importFile(content, importMode);
+      if (res.success && res.data) {
+        useAppStore.getState().loadCachedHistory();
+        const data = res.data as any;
+        const msg = importMode === 'merge'
+          ? `新增 ${data.added} 条，跳过 ${data.skipped} 条，共 ${data.total} 条`
+          : `已导入 ${data.total} 条记录`;
+        Taro.showToast({ title: msg, icon: 'success', duration: 2000 });
+        // 重置导入状态
+        setParseResult(null);
+        setFileName('');
+      } else {
+        Taro.showToast({ title: res.error || '导入失败', icon: 'none' });
+      }
+    } catch (e: any) {
+      Taro.showToast({ title: e.message || '导入失败', icon: 'none' });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <View className="export-page">
       <View className="section">
@@ -144,13 +217,6 @@ export default function ExportPage() {
         <View className="btn-group">
           <Button
             className="action-btn primary"
-            loading={downloading}
-            onClick={handleIncrementalRefresh}
-          >
-            增量更新
-          </Button>
-          <Button
-            className="action-btn"
             loading={downloading}
             onClick={handleFullDownload}
           >
@@ -233,6 +299,95 @@ export default function ExportPage() {
         >
           分享给好友
         </Button>
+      </View>
+
+      {/* ====== 导入功能区域 ====== */}
+      <View className="section import-section">
+        <View className="section-header">
+          <Text className="section-title">数据导入</Text>
+          <PrinterIcon size={28} />
+        </View>
+        <Text className="section-desc">从其他平台导入打印记录（JSON/CSV/HA格式）</Text>
+
+        {!parseResult ? (
+          <Button
+            className="import-btn"
+            loading={parsing}
+            onClick={handleChooseImportFile}
+          >
+            {parsing ? '解析中...' : '选择文件导入'}
+          </Button>
+        ) : (
+          <View className="import-result">
+            {parseResult.success ? (
+              <>
+                <View className="result-success">
+                  <Text className="result-icon">✅</Text>
+                  <Text className="result-text">文件解析成功！</Text>
+                </View>
+                <View className="result-info">
+                  <Text className="info-row">📄 文件：{fileName}</Text>
+                  <Text className="info-row">📊 格式：{parseResult.format?.toUpperCase()}</Text>
+                  <Text className="info-row">📝 记录数：{parseResult.data?.length || 0} 条</Text>
+                  {(() => {
+                    const existingIds = loadExistingIds();
+                    const newCount = parseResult.data?.filter(
+                      (item: any) => !existingIds.has(String(item.id ?? ''))
+                    ).length || 0;
+                    return <Text className="info-row highlight">🆕 预计新增：{newCount} 条</Text>;
+                  })()}
+                </View>
+
+                <View className="mode-selector">
+                  <Text className="mode-label">导入模式：</Text>
+                  <View className="mode-options">
+                    <View
+                      className={`mode-option ${importMode === 'merge' ? 'active' : ''}`}
+                      onClick={() => setImportMode('merge')}
+                    >
+                      <Text className={`mode-radio ${importMode === 'merge' ? 'checked' : ''}`}></Text>
+                      <View className="mode-info">
+                        <Text className="mode-name">合并模式</Text>
+                        <Text className="mode-desc">保留已有数据，按ID去重</Text>
+                      </View>
+                    </View>
+                    <View
+                      className={`mode-option ${importMode === 'overwrite' ? 'active' : ''}`}
+                      onClick={() => setImportMode('overwrite')}
+                    >
+                      <Text className={`mode-radio ${importMode === 'overwrite' ? 'checked' : ''}`}></Text>
+                      <View className="mode-info">
+                        <Text className="mode-name">覆盖模式</Text>
+                        <Text className="mode-desc">清除现有数据，完全替换</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                <Button
+                  className="confirm-import-btn"
+                  type="primary"
+                  loading={importing}
+                  onClick={handleImport}
+                >
+                  {importing ? '导入中...' : '确认导入'}
+                </Button>
+              </>
+            ) : (
+              <View className="result-error">
+                <Text className="error-icon">❌</Text>
+                <Text className="error-text">{parseResult.error}</Text>
+                <Button
+                  className="retry-btn"
+                  size="mini"
+                  onClick={() => setParseResult(null)}
+                >
+                  重新选择
+                </Button>
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );

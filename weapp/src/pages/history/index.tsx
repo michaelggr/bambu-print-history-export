@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
 import { useDidShow, usePullDownRefresh, useShareAppMessage } from '@tarojs/taro';
 import { useState, useCallback } from 'react';
 import Taro from '@tarojs/taro';
@@ -157,9 +157,11 @@ export default function HistoryPage() {
         <Text className="total-text">共 {pagedData.total} 条</Text>
 
         <View className="action-icons">
-          <PrinterIcon size={20} />
-          <Text className="action-icon" onClick={() => Taro.navigateTo({ url: '/pages/import/index' })}>
-            📥
+          <Text
+            className={`action-icon ${refreshing ? 'refreshing' : ''}`}
+            onClick={() => doRefresh(true)}
+          >
+            🔄
           </Text>
           <Button className="share-btn" openType="share">📤</Button>
         </View>

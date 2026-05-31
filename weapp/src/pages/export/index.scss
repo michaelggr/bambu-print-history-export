@@ -1,4 +1,4 @@
-﻿﻿﻿﻿.export-page {
+﻿﻿﻿﻿﻿.export-page {
   min-height: 100vh;
   padding: 14px;
   background: #0D0F1A;
@@ -171,4 +171,179 @@
   color: #00D4AA !important;
   border: 1px solid rgba(0, 212, 170, 0.3) !important;
   font-weight: 500;
+}
+
+// ====== 导入功能样式 ======
+.import-section {
+  border-color: rgba(108, 92, 231, 0.3);
+  background: linear-gradient(135deg, #161829 0%, rgba(108, 92, 231, 0.08) 100%);
+}
+
+.import-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  margin-top: 10px;
+}
+
+.import-result {
+  margin-top: 14px;
+}
+
+.result-success,
+.result-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.result-success {
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+}
+
+.result-error {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.result-icon,
+.error-icon {
+  font-size: 20px;
+}
+
+.result-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #00D4AA;
+}
+
+.error-text {
+  flex: 1;
+  font-size: 13px;
+  color: #FF6B6B;
+}
+
+.result-info {
+  background: #0D0F1A;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+
+  .info-row {
+    display: block;
+    font-size: 13px;
+    color: #9B9BB0;
+    padding: 5px 0;
+    line-height: 1.5;
+
+    &.highlight {
+      color: #00D4AA;
+      font-weight: 600;
+      padding-top: 10px;
+      border-top: 1px solid #2A2D45;
+      margin-top: 5px;
+    }
+  }
+}
+
+.mode-selector {
+  margin-bottom: 16px;
+
+  .mode-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #E8E8F0;
+    margin-bottom: 10px;
+  }
+
+  .mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #0D0F1A;
+  border: 2px solid #2A2D45;
+  transition: all 0.2s ease;
+
+  &.active {
+    border-color: #00D4AA;
+    background: rgba(0, 212, 170, 0.08);
+  }
+
+  .mode-radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #2A2D45;
+    position: relative;
+    flex-shrink: 0;
+
+    &.checked::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00D4AA;
+    }
+  }
+
+  .mode-info {
+    flex: 1;
+
+    .mode-name {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #E8E8F0;
+      margin-bottom: 2px;
+    }
+
+    .mode-desc {
+      display: block;
+      font-size: 12px;
+      color: #9B9BB0;
+    }
+  }
+}
+
+.confirm-import-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  letter-spacing: 1px;
+}
+
+.retry-btn {
+  margin-left: auto;
+  background: rgba(255, 107, 107, 0.15) !important;
+  color: #FF6B6B !important;
+  border: 1px solid rgba(255, 107, 107, 0.3) !important;
+  font-size: 12px !important;
 }
