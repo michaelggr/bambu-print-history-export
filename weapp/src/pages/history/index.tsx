@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
 import { useDidShow, usePullDownRefresh, useShareAppMessage } from '@tarojs/taro';
 import { useState, useCallback } from 'react';
 import Taro from '@tarojs/taro';
@@ -7,7 +7,8 @@ import { useAppStore } from '@/store';
 import { formatDateTime, formatDuration, formatWeight, formatLength, statusText, statusColor, sliceModeLabel, rgbaToHex } from '@/utils/format';
 import { applyFilters, paginate, extractDeviceList } from '@/utils/bambu-filter';
 import type { BambuHistoryItem } from '@/types/bambu';
-import PrinterIcon from '@/components/PrinterIcon';
+import PrinterIcon from '@/components/PrinterIcon/index';
+import { isDemoMode, disableDemoMode } from '@/utils/demo-data';
 import './index.scss';
 
 const PAGE_SIZE = 15;
@@ -129,6 +130,24 @@ export default function HistoryPage() {
 
   return (
     <View className="history-page">
+      {/* 演示模式提示条 */}
+      {isDemoMode() && (
+        <View className="demo-banner">
+          <Text className="demo-icon">🎮</Text>
+          <Text className="demo-text">当前为演示模式（显示示例数据）</Text>
+          <Button
+            className="demo-exit-btn"
+            size="mini"
+            onClick={() => {
+              disableDemoMode();
+              Taro.reLaunch({ url: '/pages/home/index' });
+            }}
+          >
+            退出
+          </Button>
+        </View>
+      )}
+
       <View className="filter-bar">
         <Picker
           mode="selector"

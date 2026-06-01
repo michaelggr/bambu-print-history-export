@@ -1,6 +1,7 @@
 ﻿import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import PrinterIcon from '@/components/PrinterIcon/index';
+import { enableDemoMode } from '@/utils/demo-data';
 import './index.scss';
 
 // 示例数据（模拟真实打印记录，让审核员看到实际效果）
@@ -67,6 +68,19 @@ export default function HomePage() {
 
   const handleLogin = () => {
     Taro.navigateTo({ url: '/pages/login/index' });
+  };
+
+  // 启动演示模式
+  const handleDemoMode = () => {
+    enableDemoMode();
+    Taro.showToast({
+      title: '正在进入演示模式...',
+      icon: 'loading',
+      duration: 1000,
+    });
+    setTimeout(() => {
+      Taro.switchTab({ url: '/pages/history/index' });
+    }, 1000);
   };
 
   const handlePrivacy = () => {
@@ -271,6 +285,16 @@ export default function HomePage() {
 
           <View className="cta-button-main" onClick={handleLogin}>
             <Text className="cta-button-text-main">立即登录使用</Text>
+          </View>
+
+          <View className="demo-mode-divider">
+            <Text className="divider-line"></Text>
+            <Text className="divider-text">或</Text>
+            <Text className="divider-line"></Text>
+          </View>
+
+          <View className="cta-button-demo" onClick={handleDemoMode}>
+            <Text className="cta-button-text-demo">🎮 免登录体验演示</Text>
           </View>
 
           <Text className="cta-no-account">

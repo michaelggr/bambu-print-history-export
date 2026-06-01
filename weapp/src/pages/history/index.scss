@@ -1,8 +1,44 @@
-﻿﻿﻿﻿.history-page {
+﻿﻿﻿﻿﻿.history-page {
   height: 100vh;
   display: flex;
   flex-direction: column;
   background: #0D0F1A;
+}
+
+/* 演示模式提示条 */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 14rpx 20rpx;
+  background: linear-gradient(90deg, rgba(108, 92, 231, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+  border-bottom: 2rpx solid rgba(108, 92, 231, 0.3);
+}
+
+.demo-icon {
+  font-size: 28rpx;
+  animation: pulse-demo 2s ease-in-out infinite;
+}
+
+@keyframes pulse-demo {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.demo-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: #C4B5FD;
+  font-weight: 500;
+}
+
+.demo-exit-btn {
+  background: rgba(255, 107, 107, 0.15) !important;
+  color: #FF6B6B !important;
+  border: 1px solid rgba(255, 107, 107, 0.4) !important;
+  font-size: 22rpx !important;
+  padding: 4rpx 16rpx !important;
+  border-radius: 16rpx !important;
 }
 
 .filter-bar {

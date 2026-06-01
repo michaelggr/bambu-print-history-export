@@ -565,6 +565,46 @@
   letter-spacing: 3rpx;
 }
 
+/* 演示模式分隔线 */
+.demo-mode-divider {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 24rpx 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1rpx;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.divider-text {
+  font-size: 22rpx;
+  color: #5E5E78;
+}
+
+.cta-button-demo {
+  position: relative;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+  border: 2rpx dashed rgba(108, 92, 231, 0.6);
+  border-radius: 18rpx;
+  padding: 26rpx 48rpx;
+  z-index: 1;
+}
+
+.cta-button-demo:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+.cta-button-text-demo {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #C4B5FD;
+  letter-spacing: 2rpx;
+}
+
 .cta-no-account {
   position: relative;
   display: block;
