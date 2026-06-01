@@ -34,9 +34,13 @@ export default function SettingsPage() {
       content: '将清除所有缓存的历史记录数据，不会影响登录状态',
     });
     if (!confirm) return;
-    await api.clearCache();
-    useAppStore.getState().loadCachedHistory();
-    Taro.showToast({ title: '缓存已清除', icon: 'success' });
+    try {
+      await api.clearCache();
+      useAppStore.getState().loadCachedHistory();
+      Taro.showToast({ title: '缓存已清除', icon: 'success' });
+    } catch (e: any) {
+      Taro.showToast({ title: e.message || '清除失败', icon: 'none' });
+    }
   };
 
   const handleClearAll = async () => {
@@ -45,9 +49,13 @@ export default function SettingsPage() {
       content: '将清除所有数据包括登录信息，需要重新登录',
     });
     if (!confirm) return;
-    await api.clearAll();
-    setLogout();
-    Taro.redirectTo({ url: '/pages/login/index' });
+    try {
+      await api.clearAll();
+      setLogout();
+      Taro.redirectTo({ url: '/pages/login/index' });
+    } catch (e: any) {
+      Taro.showToast({ title: e.message || '清除失败', icon: 'none' });
+    }
   };
 
   const handleLogout = async () => {
@@ -56,9 +64,15 @@ export default function SettingsPage() {
       content: '登出后需要重新登录才能使用',
     });
     if (!confirm) return;
-    await api.logout();
-    setLogout();
-    Taro.redirectTo({ url: '/pages/login/index' });
+    try {
+      await api.logout();
+      setLogout();
+      Taro.redirectTo({ url: '/pages/login/index' });
+    } catch (e: any) {
+      // 即使登出API失败，也强制本地登出
+      setLogout();
+      Taro.redirectTo({ url: '/pages/login/index' });
+    }
   };
 
   return (
