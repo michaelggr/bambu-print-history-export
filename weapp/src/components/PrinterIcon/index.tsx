@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View } from '@tarojs/components';
 // 使用统一的 index.scss 命名，避免大小写问题
 import './index.scss';
 

@@ -1,4 +1,9 @@
-﻿import type { BambuHistoryItem } from '@/types/bambu';
+﻿﻿import type { BambuHistoryItem } from '@/types/bambu';
+import Taro from '@tarojs/taro';
+import { saveToken, clearToken, saveHistoryCache } from './bambu-cache';
+
+// 演示模式专用的假token（用于绕过登录检查）
+const DEMO_TOKEN = 'demo_mode_token_for_review_testing';
 
 // 从真实数据中提取的脱敏演示数据（基于 bambu_history_20260531.json）
 export const DEMO_HISTORY: BambuHistoryItem[] = [
@@ -277,9 +282,13 @@ export const DEMO_STATS = {
  */
 export function enableDemoMode(): void {
   try {
-    Taro.setStorageSync('bambu_history', JSON.stringify(DEMO_HISTORY));
+    // 设置假token，让系统认为已登录（演示模式专用）
+    saveToken(DEMO_TOKEN, 'demo_user');
+    // 使用标准的缓存保存函数，确保数据格式正确
+    saveHistoryCache(DEMO_HISTORY);
+    // 标记为演示模式
     Taro.setStorageSync('bambu_demo_mode', 'true');
-    console.log('[Demo] 演示模式已启用');
+    console.log('[Demo] 演示模式已启用，已写入', DEMO_HISTORY.length, '条演示数据');
   } catch (e) {
     console.error('[Demo] 启用演示模式失败:', e);
   }
@@ -290,6 +299,8 @@ export function enableDemoMode(): void {
  */
 export function disableDemoMode(): void {
   try {
+    // 清除演示模式的假token
+    clearToken();
     Taro.removeStorageSync('bambu_demo_mode');
     // 不清除历史数据，让用户决定是否清除
     console.log('[Demo] 演示模式已关闭');
@@ -303,4 +314,21 @@ export function disableDemoMode(): void {
  */
 export function isDemoMode(): boolean {
   return Taro.getStorageSync('bambu_demo_mode') === 'true';
+}
+
+/**
+ * 演示模式下显示提示并阻止操作（用于需要真实API调用的按钮）
+ * @param actionName 操作名称，如"下载"、"导出"等
+ * @returns 是否处于演示模式（true表示已拦截）
+ */
+export function checkDemoMode(actionName: string): boolean {
+  if (isDemoMode()) {
+    Taro.showToast({
+      title: `演示模式不支持${actionName}`,
+      icon: 'none',
+      duration: 2000,
+    });
+    return true;
+  }
+  return false;
 }

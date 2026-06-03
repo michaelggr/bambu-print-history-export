@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem, HARecord, HAFormat } from '@/types/bambu';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem, HARecord, HAFormat } from '@/types/bambu';
 
 export function parseColor(colorStr?: string | null): string {
   if (!colorStr) return '';

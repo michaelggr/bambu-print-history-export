@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿export default defineAppConfig({
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿export default defineAppConfig({
   // 启用按需注入：仅注入当前页面所需的自定义组件和页面代码
   // 优化小程序启动时间和运行时内存占用
   // 基础库要求：2.11.1 及以上版本

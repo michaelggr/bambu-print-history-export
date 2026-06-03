@@ -1,4 +1,4 @@
-﻿import { View, Text, ScrollView } from '@tarojs/components';
+﻿﻿import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import PrinterIcon from '@/components/PrinterIcon/index';
 import { enableDemoMode } from '@/utils/demo-data';

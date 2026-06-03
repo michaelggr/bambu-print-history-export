@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView, Picker, Image, Button } from '@tarojs/components';
 import { useDidShow, usePullDownRefresh, useShareAppMessage } from '@tarojs/taro';
 import { useState, useCallback } from 'react';
 import Taro from '@tarojs/taro';
@@ -90,6 +90,20 @@ export default function HistoryPage() {
   }, []);
 
   useDidShow(() => {
+    // 演示模式跳过登录检查
+    if (isDemoMode()) {
+      loadCachedHistory();
+      const cached = useAppStore.getState().history;
+      if (cached.length === 0) {
+        // 如果缓存没有数据，从演示数据加载
+        Taro.setStorageSync('bambu_history', JSON.stringify(require('@/utils/demo-data').DEMO_HISTORY));
+        loadCachedHistory();
+      }
+      const devs = extractDeviceList(useAppStore.getState().history);
+      setDevices(devs);
+      return;
+    }
+
     const token = useAppStore.getState().token;
     if (!token) {
       Taro.redirectTo({ url: '/pages/login/index' });

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem, PeriodStats, StatsResult } from '@/types/bambu';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import type { BambuHistoryItem, PeriodStats, StatsResult } from '@/types/bambu';
 
 function parseColor(colorStr?: string | null): string {
   if (!colorStr) return '';

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Button, Picker } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Button, Picker } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 import { api } from '@/utils/api';
@@ -7,6 +7,7 @@ import { extractDeviceList } from '@/utils/bambu-filter';
 import type { FilterParams } from '@/utils/bambu-filter';
 import type { ImportFormat, ImportResult } from '@/utils/bambu-import';
 import { loadExistingIds } from '@/utils/bambu-cache';
+import { isDemoMode, checkDemoMode } from '@/utils/demo-data';
 import PrinterIcon from '@/components/PrinterIcon';
 import './index.scss';
 
@@ -96,6 +97,9 @@ export default function ExportPage() {
       Taro.showToast({ title: '暂无数据可分享', icon: 'none' });
       return;
     }
+    // 演示模式拦截：不支持真实分享
+    if (checkDemoMode('分享')) return;
+
     try {
       await api.shareExport(format);
     } catch (e: any) {
@@ -104,6 +108,9 @@ export default function ExportPage() {
   };
 
   const handleFullDownload = async () => {
+    // 演示模式拦截：不支持真实下载
+    if (checkDemoMode('全量下载')) return;
+
     setDownloading(true);
     try {
       const res = await api.fullDownload();
@@ -121,6 +128,9 @@ export default function ExportPage() {
   };
 
   const handleIncrementalRefresh = async () => {
+    // 演示模式拦截：不支持真实刷新
+    if (checkDemoMode('增量刷新')) return;
+
     setDownloading(true);
     try {
       const res = await api.refreshHistory();

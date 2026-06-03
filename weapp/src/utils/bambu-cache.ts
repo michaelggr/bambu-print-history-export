@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import Taro from '@tarojs/taro';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import Taro from '@tarojs/taro';
 import type { BambuHistoryItem } from '@/types/bambu';
 
 const TOKEN_KEY = 'bambu_token';

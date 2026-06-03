@@ -1,8 +1,9 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Button } from '@tarojs/components';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
 import { api } from '@/utils/api';
 import { useAppStore } from '@/store';
+import { checkDemoMode, isDemoMode } from '@/utils/demo-data';
 import PrinterIcon from '@/components/PrinterIcon';
 import './index.scss';
 
@@ -12,6 +13,9 @@ export default function SettingsPage() {
   const [downloading, setDownloading] = useState(false);
 
   const handleFullDownload = async () => {
+    // 演示模式拦截：不支持真实下载
+    if (checkDemoMode('全量下载')) return;
+
     setDownloading(true);
     try {
       const res = await api.fullDownload();
@@ -29,6 +33,9 @@ export default function SettingsPage() {
   };
 
   const handleClearCache = async () => {
+    // 演示模式拦截：不支持清除缓存（会清除演示数据）
+    if (checkDemoMode('清除缓存')) return;
+
     const { confirm } = await Taro.showModal({
       title: '确认清除',
       content: '将清除所有缓存的历史记录数据，不会影响登录状态',
@@ -44,6 +51,20 @@ export default function SettingsPage() {
   };
 
   const handleClearAll = async () => {
+    // 演示模式特殊处理：退出演示模式而不是清除数据
+    if (isDemoMode()) {
+      const { confirm } = await Taro.showModal({
+        title: '退出演示模式',
+        content: '当前为演示模式，是否退出演示模式？',
+        confirmText: '退出演示',
+      });
+      if (!confirm) return;
+      const { disableDemoMode } = require('@/utils/demo-data');
+      disableDemoMode();
+      Taro.reLaunch({ url: '/pages/home/index' });
+      return;
+    }
+
     const { confirm } = await Taro.showModal({
       title: '确认清除全部',
       content: '将清除所有数据包括登录信息，需要重新登录',
@@ -59,6 +80,20 @@ export default function SettingsPage() {
   };
 
   const handleLogout = async () => {
+    // 演示模式特殊处理：退出演示模式
+    if (isDemoMode()) {
+      const { confirm } = await Taro.showModal({
+        title: '退出演示模式',
+        content: '确定要退出演示模式吗？',
+        confirmText: '退出演示',
+      });
+      if (!confirm) return;
+      const { disableDemoMode } = require('@/utils/demo-data');
+      disableDemoMode();
+      Taro.reLaunch({ url: '/pages/home/index' });
+      return;
+    }
+
     const { confirm } = await Taro.showModal({
       title: '确认登出',
       content: '登出后需要重新登录才能使用',

@@ -1,4 +1,4 @@
-﻿﻿import { useState } from 'react';
+﻿﻿﻿﻿import { useState } from 'react';
 import { FileText, Mail, AlertTriangle } from 'lucide-react';
 
 export default function UserAgreement() {

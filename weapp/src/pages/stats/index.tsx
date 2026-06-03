@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, ScrollView } from '@tarojs/components';
 import { useDidShow } from '@tarojs/taro';
 import { useState } from 'react';
 import Taro from '@tarojs/taro';
@@ -6,6 +6,7 @@ import { api } from '@/utils/api';
 import { useAppStore } from '@/store';
 import { formatWeight, formatDuration } from '@/utils/format';
 import type { PeriodStats, StatsResult } from '@/types/bambu';
+import { isDemoMode, DEMO_STATS } from '@/utils/demo-data';
 import './index.scss';
 
 type PeriodKey = 'lifetime' | '7d' | '30d';
@@ -41,6 +42,12 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(false);
 
   useDidShow(() => {
+    // 演示模式跳过登录检查
+    if (isDemoMode()) {
+      loadStats();
+      return;
+    }
+
     const token = useAppStore.getState().token;
     if (!token) { Taro.redirectTo({ url: '/pages/login/index' }); return; }
     loadStats();
@@ -49,6 +56,12 @@ export default function StatsPage() {
   const loadStats = async () => {
     setLoading(true);
     try {
+      // 演示模式使用预设的统计数据
+      if (isDemoMode()) {
+        setStats(DEMO_STATS as StatsResult);
+        return;
+      }
+
       const res = await api.getStats();
       if (res.success && res.data) setStats(res.data);
     } finally {
