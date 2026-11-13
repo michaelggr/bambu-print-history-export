@@ -1,8 +1,10 @@
-﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Input, Button } from '@tarojs/components';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { View, Text, Input, Button } from '@tarojs/components';
 import { useState, useEffect } from 'react';
 import Taro from '@tarojs/taro';
 import { api } from '@/utils/api';
 import { useAppStore } from '@/store';
+import { isDemoMode } from '@/utils/demo-data';
+import { clearCache } from '@/utils/bambu-cache';
 import './index.scss';
 
 export default function LoginPage() {
@@ -17,6 +19,8 @@ export default function LoginPage() {
   useEffect(() => {
     const checkLogin = async () => {
       try {
+        // 演示模式下不自动跳回：假token会被误判为已登录，导致无法登录真实账号
+        if (isDemoMode()) return;
         const { loggedIn } = await api.checkAuth();
         if (loggedIn) {
           Taro.navigateBack(); // 返回上一页（通常是首页）
@@ -84,6 +88,13 @@ export default function LoginPage() {
     try {
       const res = await api.loginWithCode(phone.trim(), code.trim());
       if (res.success && res.token) {
+        // 从演示模式登录真实账号：必须清除演示标记和假数据，
+        // 否则历史页仍走演示分支，一直显示假数据而不拉取真实数据
+        if (isDemoMode()) {
+          Taro.removeStorageSync('bambu_demo_mode');
+          clearCache(); // 清除假数据缓存
+          useAppStore.getState().setHistory([]); // 清空 store 中的假数据，触发历史页自动刷新
+        }
         setLogin(res.token);
         // 登录成功后返回上一页或跳转到历史页
         Taro.navigateBack();
